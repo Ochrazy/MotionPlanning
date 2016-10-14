@@ -3,6 +3,7 @@
 
 Bug2::Bug2(string name) : BugAlgorithm(name)
 {
+	heading = goalPosition - startPosition;
 }
 
 

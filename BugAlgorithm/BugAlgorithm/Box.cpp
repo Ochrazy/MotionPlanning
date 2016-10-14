@@ -146,6 +146,19 @@ Point& Box::getLowestDistancePoint()
     return(lowestDistancePoint);
 }
 
+bool Box::isPointInsideAABB(Point pt)
+{
+	Point boxMin = GetVertex(0);
+	Point boxMax = GetVertex(2);
+
+	if (pt.x > boxMin.x && pt.x < boxMax.x &&
+		pt.y > boxMin.y && pt.y < boxMax.y)
+	{
+		return true;
+	}
+	return false;
+}
+
 /*********************************************************************************************************************
  * distance()
  * Diese Funktion berechnet den minimalen Abstand der beiden Objekte, box1 und box2

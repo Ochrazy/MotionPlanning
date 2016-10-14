@@ -24,6 +24,7 @@ public:
     void setNextVertex(int index);
     Point& getLowestDistancePoint();
     double distance(Box box2, Point *pt);
+	bool isPointInsideAABB(Point pt);
 
 protected:
     Point m_Verts[8];           // vertices of the box

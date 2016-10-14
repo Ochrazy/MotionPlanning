@@ -31,6 +31,7 @@ protected:
     vector<Point> leavePoint;
     Point oldPoint;
     Point actPoint;
+	bool wallFollowingMode;
 
 public:
     BugAlgorithm::BugAlgorithm(const std::string& name);
@@ -60,7 +61,7 @@ public:
     double getTotalDistance();
 
     bool update(Box obstacle[], Box robot[], int nObst);
-    int obstacleInWay(Box obstacle[], Box robot[], int nObst);
+    int obstacleInWay(Box obstacle[], Box robot[], Point robotPos, int nObst);
     void move();
     void wallFollowingToPoint(Point p, bool dir, Box box);
     void motionToGoal();

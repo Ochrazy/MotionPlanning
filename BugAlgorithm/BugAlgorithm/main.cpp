@@ -79,6 +79,7 @@ int main(void)
     {
       goal_reached = bug2.update(aHindernis, Roboter, nHind);
       robPos = bug2.getRobPos();
+	  Roboter[0].Set(robPos);
       path.push_back(bug2.getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
       cout << robPos.x << " " << robPos.y << endl; // Ausgabe auf Konsole
     }

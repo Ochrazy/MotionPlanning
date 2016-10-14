@@ -8,6 +8,7 @@ BugAlgorithm::BugAlgorithm(const string& name)
     , goalPosition(1.0, 1.0, 0.0) //set the goal position
     , startPosition(0.0, 0.0, 0.0) //set the start position
     , firstHit(false)
+	, wallFollowingMode(false)
 {
 }
 
@@ -103,19 +104,56 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
         return true;
     }
 
-	wallFollowing(true, obstacle[0]);
-	motionToGoal();
+	if (wallFollowingMode == false)
+	{
+		Point possibleRobotPos = robotPos + heading * DIST_MIN;
+		if (obstacleInWay(obstacle, robot, possibleRobotPos, nObst) == -1)
+		{
+			// Free to move on
+		}
+		else
+		{
+			wallFollowingMode = true;
+			heading = Point(1, 0, 0);
+		}
+	}
+	else // Wall Following Mode
+	{
+		Point headingLeft = Point(-heading.y, heading.x, 0);
+		Point possibleRobotPos = robotPos + headingLeft * DIST_MIN;
+		if (obstacleInWay(obstacle, robot, possibleRobotPos, nObst) == -1)
+		{
+			// Free to move on
+			heading = headingLeft;
+		}
 
-    actPoint.Mac(heading, DIST_MIN); // move next step
-    return false;
+		Point inter;
+		double t1, t2;
+//		if (IntersectionLineLine(robotPos, robotPos + heading * DIST_MIN, robotPos, robotPos - heading * DIST_MIN,
+	//		&inter, &t1, &t2))
+		if (IntersectionLineLine(robotPos + Point(0.1,0.1,0), robotPos + heading * DIST_MIN, startPosition, goalPosition,
+			&inter, &t1, &t2))
+		{
+			heading = goalPosition - robotPos;
+			wallFollowingMode = false;
+			std::cout << "leave point: " << robotPos.x << "," << robotPos.y << std::endl;
+		}
+	}
+		
+	actPoint.Mac(heading, DIST_MIN); // one step forward
+	return false;
 }
 
 /*****************************************************************************/
-int BugAlgorithm::obstacleInWay(Box obstacle[], Box robot[], int nObst)
+int BugAlgorithm::obstacleInWay(Box obstacle[], Box robot[], Point robotPos, int nObst)
 {
     for (int i = 0; i <nObst; i++)
     {
-        //.....
+		if (obstacle[i].MinkowskiDifference(robot[0]).isPointInsideAABB(robotPos))
+		{	
+			std::cout << "Obstacle hit: " << i << std::endl;
+			return i;
+		}
     }
 
     return(-1);
