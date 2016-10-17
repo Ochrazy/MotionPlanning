@@ -32,6 +32,7 @@ protected:
     Point oldPoint;
     Point actPoint;
 	bool wallFollowingMode;
+	bool bWallFollowingClockwise;
 
 public:
     BugAlgorithm::BugAlgorithm(const std::string& name);

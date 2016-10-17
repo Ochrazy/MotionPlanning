@@ -10,7 +10,7 @@
 
 #include "Point.h"
 #include "Box.h"
-#include "Bug2.h"
+#include "Bug0.h"
 
 using namespace std;
 
@@ -18,7 +18,7 @@ using namespace std;
 void write_program_file(vector<Point> path)
 {
     ofstream myfile;
-    myfile.open("Bug2.prg");
+    myfile.open("Bug0.prg");
     // Iterate and print values of path
     vector<Point>::const_iterator i;
     myfile << "ProgramFile" << endl;
@@ -64,23 +64,23 @@ int main(void)
     DWORD dwStart = GetTickCount();
 
     // Initialize start, goal, actPoint and heading
-    Bug2 bug2("Bug2");
-    bug2.setStartPosition(0.2f, 0.f); // EASYROB
-    bug2.setGoalPosition(0.3f, 0.7f); // EASYROB
-    Roboter[0].Set(bug2.getStartPosition());
-    bug2.setIntermediatePoint(bug2.getGoalPosition()); // EASYROB
-    bug2.setActPoint(bug2.getStartPosition());
-    bug2.setHeading((bug2.getGoalPosition() - bug2.getStartPosition()).Normalize());
-    path.push_back(bug2.getStartPosition());
+    Bug0 Bug0("Bug0");
+    Bug0.setStartPosition(0.2f, 0.f); // EASYROB
+    Bug0.setGoalPosition(0.3f, 0.7); // EASYROB
+    Roboter[0].Set(Bug0.getStartPosition());
+    Bug0.setIntermediatePoint(Bug0.getGoalPosition()); // EASYROB
+    Bug0.setActPoint(Bug0.getStartPosition());
+    Bug0.setHeading((Bug0.getGoalPosition() - Bug0.getStartPosition()).Normalize());
+    path.push_back(Bug0.getStartPosition());
 
     Point robPos;
     bool goal_reached = false;
     while (!goal_reached)
     {
-      goal_reached = bug2.update(aHindernis, Roboter, nHind);
-      robPos = bug2.getRobPos();
+      goal_reached = Bug0.update(aHindernis, Roboter, nHind);
+      robPos = Bug0.getRobPos();
 	  Roboter[0].Set(robPos);
-      path.push_back(bug2.getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
+      path.push_back(Bug0.getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
       cout << robPos.x << " " << robPos.y << endl; // Ausgabe auf Konsole
     }
 

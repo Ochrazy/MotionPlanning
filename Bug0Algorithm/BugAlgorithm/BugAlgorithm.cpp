@@ -9,6 +9,7 @@ BugAlgorithm::BugAlgorithm(const string& name)
     , startPosition(0.0, 0.0, 0.0) //set the start position
     , firstHit(false)
 	, wallFollowingMode(false)
+	, bWallFollowingClockwise(false)
 {
 }
 
@@ -97,46 +98,79 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
     Point pt, robotPos = actPoint;
     static Box mink_diff;
     static int ret = -1;  // no obstacle
+	double dist_current = DIST_MIN;
 
-    if (goalReached(robotPos, goalPosition, DIST_MIN)) {
+    if (goalReached(robotPos, goalPosition, dist_current)) {
         actPoint = goalPosition;
         // cout << "at goal, smile :) \n";
         return true;
     }
-
+	// First Phase: Move to Goal
 	if (wallFollowingMode == false)
 	{
-		Point possibleRobotPos = robotPos + heading * DIST_MIN;
-		if (obstacleInWay(obstacle, robot, possibleRobotPos, nObst) == -1)
+		// Check if robo could move to goal without collision
+		Point possibleRobotPos = robotPos + heading * dist_current;
+		int obstacleHit = -1;
+		if ((obstacleHit = obstacleInWay(obstacle, robot, possibleRobotPos, nObst)) == -1)
 		{
-			// Free to move on
+			// Free to move to goal
 		}
-		else
+		else // robo would hit a wall
 		{
+			std::cout << "Hit Point" << std::endl;
+			// Follow the wall
 			wallFollowingMode = true;
-			heading = Point(1, 0, 0);
+
+			// Move along wall clockwise or counterclockwise?
+			double direction = 1;
+			if (bWallFollowingClockwise == false)
+				direction = -1;
+
+			// Find Heading along Wall
+			Box boxHit = obstacle[obstacleHit].MinkowskiDifference(robot[0]);
+			// Check on what side of the rectangle/obstacle robo is and set heading accordingly
+			// Left side
+			if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x)
+				heading = Point(0, direction, 0);
+			// Right side
+			else if(robotPos.x > boxHit.GetVertex(1).x && robotPos.x > boxHit.GetVertex(2).x)
+				heading = Point(0, -direction, 0);
+			// Top side
+			else if (robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
+				heading = Point(direction, 0, 0);
+			// Bottom side
+			else if (robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
+				heading = Point(-direction, 0, 0);
 		}
 	}
-	else // Wall Following Mode
+	else // Second Phase: Wall Following Mode
 	{
-		Point headingLeft = Point(-heading.y, heading.x, 0);
-		Point possibleRobotPos = robotPos + headingLeft * DIST_MIN;
+		// Turn 90 degrees to left/right 
+		Point heading90 = Point(heading.y, -heading.x, 0);
+		if (bWallFollowingClockwise == false)
+			heading90 = Point(-heading.y, heading.x, 0);
+
+		// Check if the obstacle/wall is still to right/left
+		Point possibleRobotPos = robotPos + heading90 * dist_current;
 		if (obstacleInWay(obstacle, robot, possibleRobotPos, nObst) == -1)
 		{
-			// Free to move on
-			heading = headingLeft;
-		}
-
-		Point inter;
-		double t1, t2;
-//		if (IntersectionLineLine(robotPos, robotPos + heading * DIST_MIN, robotPos, robotPos - heading * DIST_MIN,
-	//		&inter, &t1, &t2))
-		if (IntersectionLineLine(robotPos + Point(0.1,0.1,0), robotPos + heading * DIST_MIN, startPosition, goalPosition,
-			&inter, &t1, &t2))
-		{
-			heading = goalPosition - robotPos;
-			wallFollowingMode = false;
-			std::cout << "leave point: " << robotPos.x << "," << robotPos.y << std::endl;
+			// Robo is located at a corner:
+			// Bug0: check if robo can move to goal
+			Point headingGoal = (goalPosition - robotPos).Normalize();
+			Point possibleRobotPos2 = robotPos + headingGoal * dist_current * 1.5;
+			if (obstacleInWay(obstacle, robot, possibleRobotPos2, nObst) == -1)
+			{
+				// Found leave point: move to goal again (first phase)
+				heading = headingGoal;
+				wallFollowingMode = false;
+				std::cout << "Leave Point" << std::endl;
+			}
+			else
+			{
+				// Robo can not move to goal:
+				// Robo is located at a corner of obstacle turn 90 degree right/left to further follow wall 
+				heading = heading90;
+			}
 		}
 	}
 		
@@ -151,7 +185,6 @@ int BugAlgorithm::obstacleInWay(Box obstacle[], Box robot[], Point robotPos, int
     {
 		if (obstacle[i].MinkowskiDifference(robot[0]).isPointInsideAABB(robotPos))
 		{	
-			std::cout << "Obstacle hit: " << i << std::endl;
 			return i;
 		}
     }
