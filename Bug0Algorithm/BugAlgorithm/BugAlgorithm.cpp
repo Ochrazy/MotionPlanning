@@ -117,7 +117,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 		}
 		else // robo would hit a wall
 		{
-			std::cout << "Hit Point" << std::endl;
+			std::cout << "Hit Point: " << robotPos.x << "," << robotPos.y << std::endl;
 			// Follow the wall
 			wallFollowingMode = true;
 
@@ -163,7 +163,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 				// Found leave point: move to goal again (first phase)
 				heading = headingGoal;
 				wallFollowingMode = false;
-				std::cout << "Leave Point" << std::endl;
+				std::cout << "Leave Point: " << robotPos.x << "," << robotPos.y << std::endl;
 			}
 			else
 			{
