@@ -10,6 +10,7 @@ BugAlgorithm::BugAlgorithm(const string& name)
 	, firstHit(false)
 	, wallFollowingMode(false)
 	, bWallFollowingClockwise(true)
+	, cornerPoint(Point(-99, 0, 0))
 {
 }
 
@@ -108,6 +109,9 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 	// First Phase: Move to Goal
 	if (wallFollowingMode == false)
 	{
+		// Head to goal
+		heading = (goalPosition - robotPos).Normalize();
+
 		// Check if robo could move to goal without collision
 		Point possibleRobotPos = robotPos + heading * dist_current;
 		int obstacleHit = -1;
@@ -118,6 +122,8 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 		else // robo would hit a wall
 		{
 			std::cout << "Hit Point: " << robotPos.x << "," << robotPos.y << std::endl;
+			latestHitPoint = robotPos;
+
 			// Follow the wall
 			wallFollowingMode = true;
 
@@ -141,10 +147,47 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 			// Bottom side
 			else if (robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
 				heading = Point(-direction, 0, 0);
+
+			// Check if robo would exactly hit a corner and set  heading accordingly
+			// Bottom-Left
+			if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x &&
+				robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
+			{
+				if (bWallFollowingClockwise) heading = Point(0, direction, 0);
+				if (!bWallFollowingClockwise) heading = Point(-direction, 0, 0);
+			}
+			// Top-Left
+			else if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x &&
+					robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
+			{
+				if (bWallFollowingClockwise) heading = Point(direction, 0, 0);
+				if (!bWallFollowingClockwise) heading = Point(0, direction, 0);
+			}
+			// Bottom-Right
+			else if (robotPos.x > boxHit.GetVertex(1).x && robotPos.x > boxHit.GetVertex(2).x &&
+					robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
+			{
+				if (bWallFollowingClockwise) heading = Point(-direction, 0, 0);
+				if (!bWallFollowingClockwise) heading = Point(0, -direction, 0);
+			}
+			// Top-Right
+			else if (robotPos.x > boxHit.GetVertex(1).x && robotPos.x > boxHit.GetVertex(2).x &&
+				robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
+			{
+				if (bWallFollowingClockwise) heading = Point(0, -direction, 0);
+				if (!bWallFollowingClockwise) heading = Point(direction, 0, 0);
+			}
 		}
 	}
 	else // Second Phase: Wall Following Mode
 	{
+		// Check if robo is back at hitpoint: No Solution can be found :(
+		if (distanceEuclid(robotPos, latestHitPoint) < 0.005)
+		{
+			std::cout << "No Path found!" << std::endl;
+			return true;
+		}
+
 		// Turn 90 degrees to left/right 
 		Point heading90 = Point(heading.y, -heading.x, 0);
 		if (bWallFollowingClockwise == false)
@@ -156,24 +199,30 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 		{
 			// Free to move on
 			heading = heading90;
+			cornerPoint = robotPos;
 		}
 
-		Point inter;
-		double t1, t2;
-		//		if (IntersectionLineLine(robotPos, robotPos + heading * DIST_MIN, robotPos, robotPos - heading * DIST_MIN,
-				//		&inter, &t1, &t2))
-
-		// Robo hit m-line? TODO: FIX THIS
-		if (IntersectionLineLine(robotPos - Point(0.1,0.1,0), robotPos + heading * dist_current, goalPosition, startPosition,
-			&inter, &t1, &t2))
+		if (cornerPoint.x > -98)
 		{
-			heading = (goalPosition - robotPos).Normalize();
-			wallFollowingMode = false;
-			std::cout << "Leave Point: " << robotPos.x << "," << robotPos.y << std::endl;
+			// Robo hit m-line? 
+			Point inter;
+			double t1, t2;
+			Point possibleRobotPos3 = robotPos + heading * dist_current;
+			float p1x = robotPos.x, p1y = robotPos.y, p2x = possibleRobotPos3.x, p2y = possibleRobotPos3.y,
+				p3x = startPosition.x, p3y = startPosition.y, p4x = goalPosition.x, p4y = goalPosition.y;
+			if (IntersectionLineLine(cornerPoint, Point(p2x, p2y, 0), Point(p3x, p3y, 0), Point(p4x, p4y, 0),
+				&inter, &t1, &t2))
+			{
+				// Move to intersection
+				dist_current = robotPos.Distance(inter);
+				wallFollowingMode = false;
+				std::cout << "Leave Point: " << robotPos.x << "," << robotPos.y << std::endl;
+				cornerPoint.x = -99;
+			}
 		}
 	}
 
-	actPoint.Mac(heading, DIST_MIN); // one step forward
+	actPoint.Mac(heading, dist_current); // one step forward
 	return false;
 }
 

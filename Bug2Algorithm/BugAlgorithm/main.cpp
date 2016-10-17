@@ -66,7 +66,7 @@ int main(void)
     // Initialize start, goal, actPoint and heading
     Bug2 bug2("Bug2");
     bug2.setStartPosition(0.2f, 0.f); // EASYROB
-    bug2.setGoalPosition(0.3f, 0.7); // EASYROB
+    bug2.setGoalPosition(0.3f, 0.7f); // EASYROB
     Roboter[0].Set(bug2.getStartPosition());
     bug2.setIntermediatePoint(bug2.getGoalPosition()); // EASYROB
     bug2.setActPoint(bug2.getStartPosition());
