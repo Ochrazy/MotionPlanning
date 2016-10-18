@@ -9,7 +9,7 @@ BugAlgorithm::BugAlgorithm(const string& name)
 	, startPosition(0.0, 0.0, 0.0) //set the start position
 	, firstHit(false)
 	, wallFollowingMode(false)
-	, bWallFollowingClockwise(true)
+	, bWallFollowingClockwise(false)
 	, cornerPoint(Point(-99, 0, 0))
 {
 }
@@ -97,7 +97,8 @@ double BugAlgorithm::getTotalDistance()
 bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 {
 	Point pt, robotPos = actPoint;
-	static Box mink_diff;
+	static Box mink_diff[2] = { obstacle[0].MinkowskiDifference(robot[0]),
+								obstacle[1].MinkowskiDifference(robot[0]) };
 	static int ret = -1;  // no obstacle
 	double dist_current = DIST_MIN;
 
@@ -115,7 +116,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 		// Check if robo could move to goal without collision
 		Point possibleRobotPos = robotPos + heading * dist_current;
 		int obstacleHit = -1;
-		if ((obstacleHit = obstacleInWay(obstacle, robot, possibleRobotPos, nObst)) == -1)
+		if ((obstacleHit = obstacleInWay(mink_diff, robot, possibleRobotPos, nObst)) == -1)
 		{
 			// Free to move to goal
 		}
@@ -133,7 +134,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 				direction = -1;
 
 			// Find Heading along Wall
-			Box boxHit = obstacle[obstacleHit].MinkowskiDifference(robot[0]);
+			Box boxHit = mink_diff[obstacleHit];
 			// Check on what side of the rectangle/obstacle robo is and set heading accordingly
 			// Left side
 			if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x)
@@ -195,7 +196,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 
 		// Check if the obstacle/wall is still to right/left
 		Point possibleRobotPos = robotPos + heading90 * dist_current;
-		if (obstacleInWay(obstacle, robot, possibleRobotPos, nObst) == -1)
+		if (obstacleInWay(mink_diff, robot, possibleRobotPos, nObst) == -1)
 		{
 			// Free to move on
 			heading = heading90;
@@ -231,7 +232,7 @@ int BugAlgorithm::obstacleInWay(Box obstacle[], Box robot[], Point robotPos, int
 {
 	for (int i = 0; i < nObst; i++)
 	{
-		if (obstacle[i].MinkowskiDifference(robot[0]).isPointInsideAABB(robotPos))
+		if (obstacle[i].isPointInsideAABB(robotPos))
 		{
 			return i;
 		}
