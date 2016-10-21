@@ -34,7 +34,8 @@ public:
 
 	// ------ Virtuelle Methoden ----- //
 	virtual void wallFollowing(Point, Box) {};
-	virtual void findHeadingAlongWall(Point, Box) {};
+	
+	void findHeadingAlongWall(Point robotPos, Box obstacle);
 
 	void setIntermediatePoint(Point pt);
 	void setHeading(Point dir);

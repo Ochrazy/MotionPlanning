@@ -8,6 +8,5 @@ public:
 	~Bug0();
 
 	virtual void wallFollowing(Point, Box);
-	virtual void findHeadingAlongWall(Point, Box);
 };
 

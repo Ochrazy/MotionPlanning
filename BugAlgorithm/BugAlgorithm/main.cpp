@@ -100,5 +100,9 @@ int main(void)
 	doBugAlgorithm(Bug0("Bug0", bClockwise), Roboter, aHindernis, nHind, "Bug0.prg");
 	doBugAlgorithm(Bug2("Bug2", bClockwise), Roboter, aHindernis, nHind, "Bug2.prg");
 
+	bClockwise = true;
+	doBugAlgorithm(Bug0("Bug0", bClockwise), Roboter, aHindernis, nHind, "Bug0CW.prg");
+	doBugAlgorithm(Bug2("Bug2", bClockwise), Roboter, aHindernis, nHind, "Bug2CW.prg");
+
     return 0;
 }
