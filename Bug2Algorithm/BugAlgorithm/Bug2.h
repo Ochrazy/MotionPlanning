@@ -7,7 +7,7 @@ public:
 	Bug2(string name);
 	~Bug2();
 
-	virtual void wallFollowing(bool, Box);
-
+	virtual void wallFollowing(Point, Box);
+	virtual void findHeadingAlongWall(Point, Box);
 };
 
