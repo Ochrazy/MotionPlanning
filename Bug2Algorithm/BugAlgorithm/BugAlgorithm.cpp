@@ -83,10 +83,9 @@ double BugAlgorithm::distanceEuclid(Point positionA, Point positionB)
 /*************************************************************************************************************************/
 bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 {
-	Point pt, robotPos = actPoint;
+	Point robotPos = actPoint;
 	static Box mink_diff[2] = { obstacle[0].MinkowskiDifference(robot[0]),
 								obstacle[1].MinkowskiDifference(robot[0]) };
-	static int ret = -1;  // no obstacle
 	dist_current = DIST_MIN;
 
 	if (goalReached(robotPos, goalPosition, dist_current)) {
@@ -122,13 +121,14 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 	}
 	else // Second Phase: Wall Following Mode
 	{
-		// Check if robo is back at hitpoint: No Solution can be found :(
+		// Check if robo is back at hitpoint: No Path can be found :(
 		if (distanceEuclid(robotPos, latestHitPoint) < DIST_MIN/2)
 		{
 			std::cout << "No Path found!" << std::endl;
 			return true;
 		}
 
+		// Find the heading and distance for next move
 		wallFollowing(robotPos, mink_diff[obstacleHit]);
 	}
 

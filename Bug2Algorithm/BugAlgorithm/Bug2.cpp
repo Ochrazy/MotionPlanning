@@ -90,6 +90,7 @@ void Bug2::wallFollowing(Point robotPos, Box obstacle)
 		Point possibleRobotPos3 = robotPos + heading * dist_current;
 		float p1x = robotPos.x, p1y = robotPos.y, p2x = possibleRobotPos3.x, p2y = possibleRobotPos3.y,
 			p3x = startPosition.x, p3y = startPosition.y, p4x = goalPosition.x, p4y = goalPosition.y;
+		// Intersection between Robo-line(possiblePos - lastCornerPoint) and m-line
 		if (IntersectionLineLine(cornerPoint, Point(p2x, p2y, 0), Point(p3x, p3y, 0), Point(p4x, p4y, 0),
 			&inter, &t1, &t2))
 		{
