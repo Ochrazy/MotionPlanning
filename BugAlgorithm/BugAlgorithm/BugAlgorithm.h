@@ -17,7 +17,6 @@ static const double DIST_ERROR = DIST_MIN / 2.; //minimum allowed distance betwe
 class BugAlgorithm
 {
 protected:
-	double totalDistance;
 	Point goalPosition;     //the goal position
 	Point startPosition;    //start point position
 	Point heading;          // direction to move
@@ -31,7 +30,7 @@ protected:
 	int obstacleHit;
 
 public:
-	BugAlgorithm::BugAlgorithm(const std::string& name);
+	BugAlgorithm::BugAlgorithm(const std::string& name, bool bWallFollowingClockwise);
 
 	// ------ Virtuelle Methoden ----- //
 	virtual void wallFollowing(Point, Box) {};

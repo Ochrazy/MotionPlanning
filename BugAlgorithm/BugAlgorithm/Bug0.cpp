@@ -1,17 +1,17 @@
-#include "Bug2.h"
+#include "Bug0.h"
 
 
-Bug2::Bug2(string name) : BugAlgorithm(name)
+Bug0::Bug0(string name, bool bClockwise) : BugAlgorithm(name, bClockwise)
 {
 	heading = goalPosition - startPosition;
 }
 
 
-Bug2::~Bug2()
+Bug0::~Bug0()
 {
 }
 
-void Bug2::findHeadingAlongWall(Point robotPos, Box obstacle)
+void Bug0::findHeadingAlongWall(Point robotPos, Box obstacle)
 {
 	// Move along wall clockwise or counterclockwise?
 	double direction = 1;
@@ -66,7 +66,7 @@ void Bug2::findHeadingAlongWall(Point robotPos, Box obstacle)
 }
 
 
-void Bug2::wallFollowing(Point robotPos, Box obstacle)
+void Bug0::wallFollowing(Point robotPos, Box obstacle)
 {
 	// Turn 90 degrees to left/right 
 	Point heading90 = Point(heading.y, -heading.x, 0);
@@ -77,28 +77,22 @@ void Bug2::wallFollowing(Point robotPos, Box obstacle)
 	Point possibleRobotPos = robotPos + heading90 * dist_current;
 	if (obstacleInWay(obstacle, possibleRobotPos) == false)
 	{
-		// Free to move on = corner
-		heading = heading90;
-		cornerPoint = robotPos;
-	}
-
-	if (isnan(cornerPoint.x) == false)
-	{
-		// Robo hit m-line? 
-		Point inter;
-		double t1, t2;
-		Point possibleRobotPos3 = robotPos + heading * dist_current;
-		float p1x = robotPos.x, p1y = robotPos.y, p2x = possibleRobotPos3.x, p2y = possibleRobotPos3.y,
-			p3x = startPosition.x, p3y = startPosition.y, p4x = goalPosition.x, p4y = goalPosition.y;
-		// Intersection between Robo-line(possiblePos - lastCornerPoint) and m-line
-		if (IntersectionLineLine(cornerPoint, Point(p2x, p2y, 0), Point(p3x, p3y, 0), Point(p4x, p4y, 0),
-			&inter, &t1, &t2))
+		// Robo is located at a corner:
+		// Bug0: check if robo can move to goal
+		Point headingGoal = (goalPosition - robotPos).Normalize();
+		Point possibleRobotPos2 = robotPos + headingGoal * dist_current * 1.5;
+		if (obstacleInWay(obstacle, possibleRobotPos2) == false)
 		{
-			// Move to intersection
-			dist_current = robotPos.Distance(inter);
+			// Found leave point: move to goal again (first phase)
+			heading = headingGoal;
 			wallFollowingMode = false;
 			std::cout << "Leave Point: " << robotPos.x << "," << robotPos.y << std::endl;
-			cornerPoint.x = nanf(" ");
+		}
+		else
+		{
+			// Robo can not move to goal:
+			// Robo is located at a corner of obstacle turn 90 degree right/left to further follow wall 
+			heading = heading90;
 		}
 	}
 }

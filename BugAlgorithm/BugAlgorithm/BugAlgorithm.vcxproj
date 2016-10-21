@@ -152,12 +152,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Box.h" />
+    <ClInclude Include="Bug0.h" />
     <ClInclude Include="Bug2.h" />
     <ClInclude Include="BugAlgorithm.h" />
     <ClInclude Include="Point.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Box.cpp" />
+    <ClCompile Include="Bug0.cpp" />
     <ClCompile Include="Bug2.cpp" />
     <ClCompile Include="BugAlgorithm.cpp" />
     <ClCompile Include="Dist.cpp" />

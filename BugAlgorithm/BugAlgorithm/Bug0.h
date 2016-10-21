@@ -4,7 +4,7 @@
 class Bug0 : public BugAlgorithm
 {
 public:
-	Bug0(string name);
+	Bug0(string name, bool bClockwise);
 	~Bug0();
 
 	virtual void wallFollowing(Point, Box);

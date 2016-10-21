@@ -2,11 +2,11 @@
 
 using namespace std;
 
-BugAlgorithm::BugAlgorithm(const string& name)
+BugAlgorithm::BugAlgorithm(const string& name, bool bWallFollowingClockwise)
 	: goalPosition(1.0, 1.0, 0.0) //set the goal position
 	, startPosition(0.0, 0.0, 0.0) //set the start position
 	, wallFollowingMode(false)
-	, bWallFollowingClockwise(false)
+	, bWallFollowingClockwise(bWallFollowingClockwise)
 	, cornerPoint(Point(nanf(" "), 0, 0))
 	, dist_current(DIST_MIN)
 	, obstacleHit(-1)
