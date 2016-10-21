@@ -12,7 +12,7 @@ using namespace std;
 /*********************************************************************************************************************************/
 static const double DIST_MIN = 0.01;            //minimum distance between the robot and the goal
 static const double DIST_ERROR = DIST_MIN / 2.; //minimum allowed distance between the robot and the obstacle divided by 2
-												//static const double M_PI = 3.1415926;
+//static const double M_PI = 3.1415926;
 
 class BugAlgorithm
 {
@@ -57,13 +57,13 @@ public:
 	bool goalReached(Point robotPos, Point goalPos, double distError);
 
 	/****************************************************************************************************
-	* Return value: true, if line from point p1, p2 intersects line from point p3, p4
-	* if not, the function returns false
-	* in case of intersection, the intersection point intersection is calculated,
-	* also
-	* t1 the parameter value between [0,1]: intersection = p1 + t*(p2-p1)
-	* t2 the parameter value between [0,1]: intersection = p3 + t*(p4-p3)
-	*/
+	 * Return value: true, if line from point p1, p2 intersects line from point p3, p4
+	 * if not, the function returns false
+	 * in case of intersection, the intersection point intersection is calculated,
+	 * also
+	 * t1 the parameter value between [0,1]: intersection = p1 + t*(p2-p1)
+	 * t2 the parameter value between [0,1]: intersection = p3 + t*(p4-p3)
+	 */
 	bool IntersectionLineLine(Point p1, Point p2, Point p3, Point p4, Point *intersection, double *t1, double *t2);
 };
 

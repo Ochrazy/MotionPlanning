@@ -80,13 +80,12 @@ double BugAlgorithm::distanceEuclid(Point positionA, Point positionB)
 	return sqrt((x_diff * x_diff) + (y_diff * y_diff));// + (z_diff * z_diff));
 }
 
-
 /*************************************************************************************************************************/
 bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 {
 	Point robotPos = actPoint;
 	static Box mink_diff[2] = { obstacle[0].MinkowskiDifference(robot[0]),
-		obstacle[1].MinkowskiDifference(robot[0]) };
+								obstacle[1].MinkowskiDifference(robot[0]) };
 	dist_current = DIST_MIN;
 
 	if (goalReached(robotPos, goalPosition, dist_current)) {
@@ -133,6 +132,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 		wallFollowing(robotPos, mink_diff[obstacleHit]);
 	}
 
+	// Move with current heading and dist_current
 	actPoint.Mac(heading, dist_current); // one step forward
 	return false;
 }
@@ -163,13 +163,13 @@ bool BugAlgorithm::goalReached(Point robotPos, Point goalPos, double distError)
 }
 
 /****************************************************************************************************
-* Return value: true, if line from point p1, p2 intersects line from point p3, p4
-* if not, the function returns false
-* in case of intersection, the intersection point intersection is calculated,
-* also
-* t1 the parameter value between [0,1]: intersection = p1 + t*(p2-p1)
-* t2 the parameter value between [0,1]: intersection = p3 + t*(p4-p3)
-*/
+ * Return value: true, if line from point p1, p2 intersects line from point p3, p4
+ * if not, the function returns false
+ * in case of intersection, the intersection point intersection is calculated,
+ * also
+ * t1 the parameter value between [0,1]: intersection = p1 + t*(p2-p1)
+ * t2 the parameter value between [0,1]: intersection = p3 + t*(p4-p3)
+ */
 bool BugAlgorithm::IntersectionLineLine(Point p1, Point p2, Point p3, Point p4, Point *intersection, double *t1, double *t2)
 {
 	// Store the values for fast access and easy

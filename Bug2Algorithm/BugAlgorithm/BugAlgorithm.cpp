@@ -122,7 +122,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 	else // Second Phase: Wall Following Mode
 	{
 		// Check if robo is back at hitpoint: No Path can be found :(
-		if (distanceEuclid(robotPos, latestHitPoint) < DIST_MIN/2)
+		if (distanceEuclid(robotPos, latestHitPoint) < DIST_MIN / 2)
 		{
 			std::cout << "No Path found!" << std::endl;
 			return true;
