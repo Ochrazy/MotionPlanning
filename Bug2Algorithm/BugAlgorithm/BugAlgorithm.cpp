@@ -138,46 +138,46 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 			// Check on what side of the rectangle/obstacle robo is and set heading accordingly
 			// Left side
 			if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x)
-				heading = Point(0, direction, 0);
+			{
+				// Bottom-Left
+				if (robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
+				{
+					if (bWallFollowingClockwise) heading = Point(0, direction, 0);
+					else heading = Point(-direction, 0, 0);
+				}
+				// Top-Left
+				else if (robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
+				{
+					if (bWallFollowingClockwise) heading = Point(direction, 0, 0);
+					else heading = Point(0, direction, 0);
+				}
+				else // Only Left side
+					heading = Point(0, direction, 0);
+			}
 			// Right side
 			else if (robotPos.x > boxHit.GetVertex(1).x && robotPos.x > boxHit.GetVertex(2).x)
-				heading = Point(0, -direction, 0);
-			// Top side
+			{
+				// Bottom-Right
+				if (robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
+				{
+					if (bWallFollowingClockwise) heading = Point(-direction, 0, 0);
+					else heading = Point(0, -direction, 0);
+				}
+				// Top-Right
+				else if (robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
+				{
+					if (bWallFollowingClockwise) heading = Point(0, -direction, 0);
+					else heading = Point(direction, 0, 0);
+				}
+				else // Only Right side
+					heading = Point(0, -direction, 0);
+			}
+			// Only Top side
 			else if (robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
 				heading = Point(direction, 0, 0);
-			// Bottom side
+			// Only Bottom side
 			else if (robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
 				heading = Point(-direction, 0, 0);
-
-			// Check if robo would exactly hit a corner and set  heading accordingly
-			// Bottom-Left
-			if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x &&
-				robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
-			{
-				if (bWallFollowingClockwise) heading = Point(0, direction, 0);
-				if (!bWallFollowingClockwise) heading = Point(-direction, 0, 0);
-			}
-			// Top-Left
-			else if (robotPos.x < boxHit.GetVertex(0).x && robotPos.x < boxHit.GetVertex(3).x &&
-					robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
-			{
-				if (bWallFollowingClockwise) heading = Point(direction, 0, 0);
-				if (!bWallFollowingClockwise) heading = Point(0, direction, 0);
-			}
-			// Bottom-Right
-			else if (robotPos.x > boxHit.GetVertex(1).x && robotPos.x > boxHit.GetVertex(2).x &&
-					robotPos.y < boxHit.GetVertex(0).y && robotPos.y < boxHit.GetVertex(1).y)
-			{
-				if (bWallFollowingClockwise) heading = Point(-direction, 0, 0);
-				if (!bWallFollowingClockwise) heading = Point(0, -direction, 0);
-			}
-			// Top-Right
-			else if (robotPos.x > boxHit.GetVertex(1).x && robotPos.x > boxHit.GetVertex(2).x &&
-				robotPos.y > boxHit.GetVertex(3).y && robotPos.y > boxHit.GetVertex(2).y)
-			{
-				if (bWallFollowingClockwise) heading = Point(0, -direction, 0);
-				if (!bWallFollowingClockwise) heading = Point(direction, 0, 0);
-			}
 		}
 	}
 	else // Second Phase: Wall Following Mode
@@ -198,7 +198,7 @@ bool BugAlgorithm::update(Box obstacle[], Box robot[], int nObst)
 		Point possibleRobotPos = robotPos + heading90 * dist_current;
 		if (obstacleInWay(mink_diff, robot, possibleRobotPos, nObst) == -1)
 		{
-			// Free to move on
+			// Free to move on = corner
 			heading = heading90;
 			cornerPoint = robotPos;
 		}
