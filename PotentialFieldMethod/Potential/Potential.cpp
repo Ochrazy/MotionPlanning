@@ -12,68 +12,68 @@ static const double GOAL_ERROR = 0.01;  // distance between the robot and the go
 
 /*********************************************************************************************************************************/
 Potential::Potential(const std::string& name)
-    : goalPosition(1.0, 1.0, 0.0) //set the goal position
-    , startPosition(0.0, 0.0, 0.0) //set the start position
+	: goalPosition(1.0, 1.0, 0.0) //set the goal position
+	, startPosition(0.0, 0.0, 0.0) //set the start position
 {
 }
 
 void Potential::setGoalPosition(double x, double y, double z)
 {
-    goalPosition.x = x;
-    goalPosition.y = y;
-    goalPosition.z = z;
+	goalPosition.x = x;
+	goalPosition.y = y;
+	goalPosition.z = z;
 }
 
 void Potential::setStartPosition(double x, double y, double z)
 {
-    startPosition.x = x;
-    startPosition.y = y;
-    startPosition.z = z;
+	startPosition.x = x;
+	startPosition.y = y;
+	startPosition.z = z;
 }
 
 void Potential::setActPoint(Point p)
 {
-    actPoint.x = p.x;
-    actPoint.y = p.y;
-    actPoint.z = p.z;
+	actPoint.x = p.x;
+	actPoint.y = p.y;
+	actPoint.z = p.z;
 }
 
 Point Potential::getGoalPosition()
 {
-    return goalPosition;
+	return goalPosition;
 }
 
 Point Potential::getStartPosition()
 {
-    return startPosition;
+	return startPosition;
 }
 
 Point Potential::getRobPos()
 {
-    return actPoint;
+	return actPoint;
 }
 
 bool Potential::goalReached(Point robotPos, Point goalPos, double distError)
 {
-    return (robotPos.Distance(goalPos) <= distError);
+	return (robotPos.Distance(goalPos) <= distError);
 }
 
 /*************************************************************************************************************************/
 bool Potential::update_box(Box obstacle[], Box robot[], int nObst)
 {
-    Point robotPos = actPoint;
-    static int cnt = 0;
+	Point robotPos = actPoint;
+	static int cnt = 0;
 
-    cnt++;
+	cnt++;
 
-    if (goalReached(robotPos, goalPosition, GOAL_ERROR))
-    {
-        actPoint = goalPosition;
-        //cout << "at goal, smile :)\n";
+	if (goalReached(robotPos, goalPosition, GOAL_ERROR))
+	{
+		actPoint = goalPosition;
+		//cout << "at goal, smile :)\n";
 
-        return true;
+		return true;
 	}
-	else if (cnt == 1000)
+	else if (cnt == 100)
 	{
 		return true;
 	}
@@ -82,40 +82,31 @@ bool Potential::update_box(Box obstacle[], Box robot[], int nObst)
 	double sf_rep = 1.;
 	double dist_goal = robotPos.Distance(goalPosition);
 	double d_star = 0.05;
-	double q_star = 0.05;
+	double q_star = 0.04;
 
 	//quadratic pot.
 	double d2 = 0.5 * sf_att * pow(dist_goal, 2);
-	double d2_delta_att = sf_att * dist_goal;
-	Point d2_delta_att_grad = sf_att * ( robotPos - goalPosition);
+	//double d2_delta_att = sf_att * dist_goal;
+	Point d2_delta_att_grad = sf_att * (robotPos - goalPosition);
 
-	double d2_delta_rep_grad = 0;
+	Point d2_delta_rep_grad(0., 0., 0.);
 
 	//repulsive pot.
-	Point point(0,0,0);
-	double min_dist_obst = 1.;
-
 	for (int i = 0; i < nObst; ++i)
 	{
 		Point point_obst;
 		double dist_obst = obstacle[i].distance(robot[0], &point_obst);
-		min_dist_obst = dist_obst < min_dist_obst ? dist_obst : min_dist_obst;
-	}
-
-	for (int i = 0; i < nObst; ++i)
-	{
-		Point point_obst;
-		double dist_obst = obstacle[i].distance(robot[0], &point_obst);
-		//double force = sf_rep * pow(1. / dist_obst - 1. / q_star, 2.) * 1. / pow(dist_obst, 2);
-		Point force = sf_rep * (1./q_star - 1. / dist_obst ) * 1. / q_star * point_obst.Normalize();
-		//if (dist_obst < q_star)
-			point += force.Normalize();
+		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();
+		if (abs(dist_obst) <= q_star)
+			d2_delta_rep_grad += force;
 	}
 	Point goalPos = (goalPosition - robotPos);
-	robotPos = ((goalPos * d2_delta_att_grad) + point).Normalize();
+	robotPos += d2_delta_rep_grad + d2_delta_att_grad;
 	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
 
-    return false;
+	robot[0].Translate((goalPosition - robotPos).Normalize() * INKR);
+
+	return false;
 
 	if (dist_goal > d_star)
 	{
@@ -128,43 +119,73 @@ bool Potential::update_box(Box obstacle[], Box robot[], int nObst)
 /*************************************************************************************************************************/
 bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst)
 {
-    Point robotPos = actPoint;
-    static int cnt = 0;
+	Point robotPos = actPoint;
+	static int cnt = 0;
 
-    cnt++;
+	cnt++;
 
-    if (goalReached(robotPos, goalPosition, GOAL_ERROR))
-    {
-        actPoint = goalPosition;
-        //cout << "at goal, smile :)\n";
+	if (goalReached(robotPos, goalPosition, GOAL_ERROR))
+	{
+		actPoint = goalPosition;
+		//cout << "at goal, smile :)\n";
 
-        return true;
-    }
+		return true;
+	}
+	else if (cnt == 100)
+	{
+		return true;
+	}
 
-    actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
+	double sf_att = 1.;
+	double sf_rep = 1.;
+	double dist_goal = robotPos.Distance(goalPosition);
+	double d_star = 0.05;
+	double q_star = 0.04;
 
-    return false;
+	//quadratic pot.
+	double d2 = 0.5 * sf_att * pow(dist_goal, 2);
+	//double d2_delta_att = sf_att * dist_goal;
+	Point d2_delta_att_grad = sf_att * (robotPos - goalPosition);
+
+	Point d2_delta_rep_grad(0.,0.,0.);
+
+	//repulsive pot.
+	for (int i = 0; i < nObst; ++i)
+	{
+		Point point_obst;
+		double dist_obst = obstacle[i].distance(robot[0], &point_obst);
+		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();
+		if (abs(dist_obst) <= q_star)
+			d2_delta_rep_grad += force;
+	}
+	Point goalPos = (goalPosition - robotPos);
+	robotPos += d2_delta_rep_grad + d2_delta_att_grad;
+	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
+
+	robot[0].SetCenter(actPoint);
+
+	return false;
 }
 
 /*************************************************************************************************************************/
 bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[], int nObst)
 {
-    Point robotPos = actPoint;
-    static int cnt = 0;
+	Point robotPos = actPoint;
+	static int cnt = 0;
 
-    cnt++;
+	cnt++;
 
-    if (goalReached(robotPos, goalPosition, GOAL_ERROR))
-    {
-        actPoint = goalPosition;
-        //cout << "at goal, smile :)\n";
+	if (goalReached(robotPos, goalPosition, GOAL_ERROR))
+	{
+		actPoint = goalPosition;
+		//cout << "at goal, smile :)\n";
 
-        return true;
-    }
+		return true;
+	}
 
 
-	
-    actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
 
-    return false;
+	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
+
+	return false;
 }
