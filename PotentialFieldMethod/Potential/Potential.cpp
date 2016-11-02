@@ -190,9 +190,9 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	for (int x = 0; x < nObst; x++)
 	{
 		if (x == 0)
-			beta_q *= -pow(robotPos.Distance(obstacle[x].GetCenter()), 2) + pow(obstacle[x].GetRadius(), 2);
+			beta_q *= -pow(robotPos.Distance(obstacle[x].GetCenter()), 2) + pow(obstacle[x].GetRadius() + robot[0].GetRadius(), 2);
 		else
-			beta_q *= pow(robotPos.Distance(obstacle[x].GetCenter()), 2) - pow(obstacle[x].GetRadius(), 2);
+			beta_q *= pow(robotPos.Distance(obstacle[x].GetCenter()), 2) - pow(obstacle[x].GetRadius() + robot[0].GetRadius(), 2);
 	}
 
 	// Repulsive Gradient
@@ -206,9 +206,9 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 			if (j != i)
 			{
 				if (j == 0)
-					beta_j *= -pow(robotPos.Distance(obstacle[j].GetCenter()), 2) + pow(obstacle[j].GetRadius(), 2);
+					beta_j *= -pow(robotPos.Distance(obstacle[j].GetCenter()), 2) + pow(obstacle[j].GetRadius() + robot[0].GetRadius(), 2);
 				else 
-					beta_j *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius(), 2);
+					beta_j *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius() + robot[0].GetRadius(), 2);
 			}
 		}
 
@@ -227,7 +227,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 7.;
+	double K = 10.;
 
 	// A - B
 	Point A = 2 * q_minus_qgoal * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K);
@@ -241,11 +241,10 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	
 	gamma /= pow(pow(dist_q_qgoal, 2 * K) + beta_q, 2. / K);
 	gamma.z = 0.;
-	Point sdfalj = gamma;
-	sdfalj.z = 0.;
-	//robotPos += sdfalj.Normalize();
 
-	actPoint.Mac(-gamma.Normalize(), INKR); // move next step
+	robotPos += gamma.Normalize();
+
+	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
 
 	robot[0].SetCenter(actPoint);
 
