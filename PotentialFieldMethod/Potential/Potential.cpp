@@ -227,10 +227,17 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 1000.;
+	double K = 7.;
 
-	Point gamma = 2 * q_minus_qgoal * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K)
-		- dist_q_qgoal_squared*  (1. / K) * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / pow(K, -1.)) * (2 * K * pow(dist_q_qgoal, 2 * K - 2)*(q_minus_qgoal)+delta_beta_q);
+	// A - B
+	Point A = 2 * q_minus_qgoal * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K);
+
+	double B1 = dist_q_qgoal_squared * (1. / K);
+	double B2 = pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K - 1.);
+	Point B3 = (2 * K * pow(dist_q_qgoal, 2 * K - 2)*(q_minus_qgoal)+delta_beta_q);
+	Point B = B1 * B2 * B3;
+	
+	Point gamma = A	- B;
 	
 	gamma /= pow(pow(dist_q_qgoal, 2 * K) + beta_q, 2. / K);
 	gamma.z = 0.;
@@ -238,7 +245,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	sdfalj.z = 0.;
 	//robotPos += sdfalj.Normalize();
 
-	actPoint.Mac(-sdfalj.Normalize(), INKR); // move next step
+	actPoint.Mac(-gamma.Normalize(), INKR); // move next step
 
 	robot[0].SetCenter(actPoint);
 
