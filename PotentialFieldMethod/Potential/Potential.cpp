@@ -182,7 +182,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 
 		return true;
 	}
-	else if (cnt > 200)
+	else if (cnt > 300)
 		return true;
 
 	// beta
@@ -196,47 +196,49 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	}
 
 	// Repulsive Gradient
-	Point delta_beta_q(0., 0., 1.);
+	Point delta_beta_q(0., 0., 0.);
 	for (int i = 0; i < nObst; i++)
 	{
-		// gradient
-		Point repulsive_gradient(0., 0., 1.);
-		if (i == 0)
-			repulsive_gradient = -2 * (robotPos - obstacle[i].GetCenter());
-		else 
-			repulsive_gradient = 2 * (robotPos - obstacle[i].GetCenter());
-
 		// Potential
-		double repulsive_potential = 1.;
+		double beta_j = 1.;
 		for (int j = 0; j < nObst; j++)
 		{
 			if (j != i)
 			{
 				if (j == 0)
-					repulsive_potential *= -pow((robotPos.Distance(obstacle[j].GetCenter())), 2) + pow(obstacle[j].GetRadius(), 2);
+					beta_j *= -pow(robotPos.Distance(obstacle[j].GetCenter()), 2) + pow(obstacle[j].GetRadius(), 2);
 				else 
-					repulsive_potential *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius(), 2);
+					beta_j *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius(), 2);
 			}
 		}
 
+		// gradient
+		Point delta_beta_i(0., 0., 0.);
+		if (i == 0)
+			delta_beta_i = -2 * (robotPos - obstacle[i].GetCenter());
+		else
+			delta_beta_i = 2 * (robotPos - obstacle[i].GetCenter());
+
 		// Total repulsive gradient
-		delta_beta_q += repulsive_gradient * repulsive_potential * 100.;
+		delta_beta_q += delta_beta_i * beta_j;
 	}
 
 	// Attractive Gradient
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 2.;
+	double K = 1000.;
 
 	Point gamma = 2 * q_minus_qgoal * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K)
-		- dist_q_qgoal_squared*1. / K*pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / (K - 1.)) * (2 * K*pow(dist_q_qgoal, 2 * K - 2)*(q_minus_qgoal)+delta_beta_q);
+		- dist_q_qgoal_squared*  (1. / K) * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / pow(K, -1.)) * (2 * K * pow(dist_q_qgoal, 2 * K - 2)*(q_minus_qgoal)+delta_beta_q);
 	
 	gamma /= pow(pow(dist_q_qgoal, 2 * K) + beta_q, 2. / K);
 	gamma.z = 0.;
-	robotPos += gamma;
-	//robotPos += gamma + delta_beta_q;
-	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
+	Point sdfalj = gamma;
+	sdfalj.z = 0.;
+	//robotPos += sdfalj.Normalize();
+
+	actPoint.Mac(-sdfalj.Normalize(), INKR); // move next step
 
 	robot[0].SetCenter(actPoint);
 
