@@ -190,9 +190,9 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	for (int x = 0; x < nObst; x++)
 	{
 		if (x == 0)
-			beta_q *= -pow((robotPos.Distance(obstacle[x].GetCenter())), 2) + pow(obstacle[x].GetRadius(), 2);
+			beta_q *= -pow(robotPos.Distance(obstacle[x].GetCenter()), 2) + pow(obstacle[x].GetRadius(), 2);
 		else
-			beta_q *= pow(robotPos.Distance(obstacle[x].GetCenter()), 2) + pow(obstacle[x].GetRadius(), 2);
+			beta_q *= pow(robotPos.Distance(obstacle[x].GetCenter()), 2) - pow(obstacle[x].GetRadius(), 2);
 	}
 
 	// Repulsive Gradient
@@ -213,27 +213,27 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 			if (j != i)
 			{
 				if (j == 0)
-					repulsive_potential *= -pow((robotPos.Distance(obstacle[i].GetCenter())), 2) + pow(obstacle[i].GetRadius(), 2);
+					repulsive_potential *= -pow((robotPos.Distance(obstacle[j].GetCenter())), 2) + pow(obstacle[j].GetRadius(), 2);
 				else 
-					repulsive_potential *= pow(robotPos.Distance(obstacle[i].GetCenter()), 2) + pow(obstacle[i].GetRadius(), 2);
+					repulsive_potential *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius(), 2);
 			}
 		}
 
 		// Total repulsive gradient
-		delta_beta_q += repulsive_gradient * repulsive_potential;
+		delta_beta_q += repulsive_gradient * repulsive_potential * 100.;
 	}
 
 	// Attractive Gradient
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 10000.;
+	double K = 2.;
 
 	Point gamma = 2 * q_minus_qgoal * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K)
 		- dist_q_qgoal_squared*1. / K*pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / (K - 1.)) * (2 * K*pow(dist_q_qgoal, 2 * K - 2)*(q_minus_qgoal)+delta_beta_q);
 	
 	gamma /= pow(pow(dist_q_qgoal, 2 * K) + beta_q, 2. / K);
-
+	gamma.z = 0.;
 	robotPos += gamma;
 	//robotPos += gamma + delta_beta_q;
 	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
