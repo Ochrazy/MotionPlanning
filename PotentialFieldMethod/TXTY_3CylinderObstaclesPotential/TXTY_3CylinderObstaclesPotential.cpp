@@ -18,7 +18,7 @@ bool check_local_minimum(vector<Point>, Point);
 int main(void)
 {
 	const double ds = 0.01f;
-	const int nHind = 3;    // Anzahl der Hindernisse
+	const int nHind = 4;    // Anzahl der Hindernisse
 	const int nRob = 1;     // Anzahl der Roboterglieder
 	vector<Point> path;     // Create a vector containing integers
 	Cylinder aHindernis[nHind];  // Unsere Hindernisse
@@ -28,17 +28,17 @@ int main(void)
 
 	// Hindernisse initialisieren
 	// Hierbei wird für jedes Hinderniss die Größe ( Skalierung ) und die Position im Raum gesetzt
-	//aHindernis[0].SetCenter(0., 0., 0.);  // outer bound
-	//aHindernis[0].SetRadius(1.);
+	aHindernis[0].SetCenter(0., 0., 0.);  // outer bound
+	aHindernis[0].SetRadius(1.);
 
-	aHindernis[0].SetCenter(0.1, 0.1, 0.0);
-	aHindernis[0].SetRadius(0.1);
-
-	aHindernis[1].SetCenter(0.5, 0.1, 0.0);
+	aHindernis[1].SetCenter(0.1, 0.1, 0.0);
 	aHindernis[1].SetRadius(0.1);
 
-	aHindernis[2].SetCenter(0.3, 0.34, 0.0);
+	aHindernis[2].SetCenter(0.5, 0.1, 0.0);
 	aHindernis[2].SetRadius(0.1);
+
+	aHindernis[3].SetCenter(0.3, 0.34, 0.0);
+	aHindernis[3].SetRadius(0.1);
 
 	// Roboter initialisieren
 	Roboter[0].SetCenter(0., 0., 0.0);
@@ -49,8 +49,8 @@ int main(void)
 
 	// Initialize start, goal, actPoint and heading
 	//pot1.setStartPosition(0.3, -0.3); // local minimum
-	//pot1.setStartPosition(0.2, -0.2); // local minimum
-	pot1.setStartPosition(-0.1, -0.2); // no local minimum
+	pot1.setStartPosition(0.2, -0.2); // local minimum
+	//pot1.setStartPosition(-0.1, -0.2); // no local minimum
 
 	pot1.setGoalPosition(0.1, 0.4); // EASYROB
 
