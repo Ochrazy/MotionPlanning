@@ -92,8 +92,8 @@ bool check_local_minimum(vector<Point> path, Point act)
 	//.....
 	static int total_counter = 0;
 
-	if (total_counter > 10)
-		if (act.Distance(path[total_counter - 10]) < 0.03)
+	if (total_counter > 20)
+		if (act.Distance(path[total_counter - 20]) < 0.03)
 		{
 			return true;
 		}
