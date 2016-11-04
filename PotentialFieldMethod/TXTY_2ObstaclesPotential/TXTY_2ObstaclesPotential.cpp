@@ -42,9 +42,9 @@ int main(void)
     DWORD dwStart = GetTickCount();
 
     // Initialize start, goal, actPoint and heading
-    pot1.setStartPosition(0.6, 0.0); // local minimum
+    //pot1.setStartPosition(0.6, 0.0); // local minimum
     //pot1.setStartPosition(0.2, -0.2); // local minimum
-    //pot1.setStartPosition(-0.1, -0.2); // no local minimum
+    pot1.setStartPosition(-0.1, -0.2); // no local minimum
 
     pot1.setGoalPosition(0.1, 0.4); // EASYROB
 
@@ -84,6 +84,16 @@ int main(void)
 bool check_local_minimum(vector<Point> path, Point act)
 {
     //.....
+	static int total_counter = 0;
+
+	if (total_counter > 10)
+		if (act.Distance(path[total_counter - 10]) < 0.03)
+		{
+			return true;
+		}
+
+	total_counter++;
+
     return false;
 }
 

@@ -73,8 +73,9 @@ bool Potential::update_box(Box obstacle[], Box robot[], int nObst)
 
 		return true;
 	}
-	else if (cnt == 100)
+	else if (cnt > 300)
 	{
+		cout << "That took way too long, abort!\n";
 		return true;
 	}
 
@@ -131,8 +132,9 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst
 
 		return true;
 	}
-	else if (cnt == 100)
+	else if (cnt > 300)
 	{
+		cout << "That took way too long, abort!\n";
 		return true;
 	}
 
@@ -183,7 +185,10 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 		return true;
 	}
 	else if (cnt > 300)
+	{
+		cout << "That took way too long, abort!\n";
 		return true;
+	}
 
 	// beta
 	double beta_q = 1.;
@@ -227,19 +232,19 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 10.;
+	double K = 1.;
 
 	// A - B
-	Point A = 2 * q_minus_qgoal * pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K);
+	Point A = 2. * q_minus_qgoal * pow(pow(dist_q_qgoal, 2. * K) + beta_q, 1. / K);
 
 	double B1 = dist_q_qgoal_squared * (1. / K);
-	double B2 = pow(pow(dist_q_qgoal, 2 * K) + beta_q, 1. / K - 1.);
-	Point B3 = (2 * K * pow(dist_q_qgoal, 2 * K - 2)*(q_minus_qgoal)+delta_beta_q);
+	double B2 = pow(pow(dist_q_qgoal, 2. * K) + beta_q, 1. / K - 1.);
+	Point B3 = (2. * K * pow(dist_q_qgoal, 2. * K - 2.)*(q_minus_qgoal)+delta_beta_q);
 	Point B = B1 * B2 * B3;
 	
 	Point gamma = A	- B;
 	
-	gamma /= pow(pow(dist_q_qgoal, 2 * K) + beta_q, 2. / K);
+	gamma /= pow(pow(dist_q_qgoal, 2. * K) + beta_q, 2. / K);
 	gamma.z = 0.;
 
 	robotPos += gamma.Normalize();
