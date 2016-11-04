@@ -232,7 +232,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 1.;
+	double K = 10.;
 
 	// A - B
 	Point A = 2. * q_minus_qgoal * pow(pow(dist_q_qgoal, 2. * K) + beta_q, 1. / K);
