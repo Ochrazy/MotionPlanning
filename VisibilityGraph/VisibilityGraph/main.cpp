@@ -8,7 +8,6 @@
 #include "Box.h"
 #include "VisibilityGraph.h"
 
-
 using namespace std;
 
 void write_program_file(vector<Point> path, string filename);
