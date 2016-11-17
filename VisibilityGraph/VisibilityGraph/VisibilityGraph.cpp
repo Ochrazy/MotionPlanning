@@ -10,9 +10,10 @@
 #include <iostream>
 #include <fstream>
 #include "VisibilityGraph.h"
+
+#include <boost/graph/astar_search.hpp>
 #include <boost/geometry/geometries/segment.hpp> 
 #include <boost/geometry/algorithms/intersection.hpp>
-
 #include <boost/geometry/geometries/point_xy.hpp>
 typedef boost::geometry::model::d2::point_xy<double> Point2D;
 typedef boost::geometry::model::segment<Point2D> Segment;
@@ -20,6 +21,26 @@ typedef boost::geometry::model::segment<Point2D> Segment;
 #define SOLUTION
 
 using namespace std;
+
+/*
+// euclidean distance heuristic
+class distance_heuristic : public boost::astar_heuristic<Graph, double>
+{
+public:
+	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
+	distance_heuristic(Point l, Vertex goal)
+		: m_location(l), m_goal(goal) {}
+	double operator()(Vertex u)
+	{
+		double dx = m_location[m_goal].x - m_location[u].x;
+		double dy = m_location[m_goal].y - m_location[u].y;
+		return ::sqrt(dx * dx + dy * dy);
+	}
+private:
+	Point m_location;
+	Vertex m_goal;
+};
+*/
 
 bool intersectionLineLine(Point p1, Point p2, Point p3, Point p4, Point *intersection, double *t1, double *t2)
 {
@@ -129,9 +150,28 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 		//if (i != 14)
 			add_edge(edge_vector[i].first, edge_vector[i].second, g);
 
+	// Create things for Dijkstra
+	vertex_descriptor start = boost::vertex(nHind *4, g);
+	std::vector<vertex_descriptor> p(num_vertices(g));
+
+	boost::dijkstra_shortest_paths(g, start, boost::predecessor_map(boost::make_iterator_property_map(p.begin(), get(boost::vertex_index, g))));
+
 #endif SOLUTION
 
 	write_gnuplot_file(g, "VisibilityGraph.dat");
+
+	// Write the path: reverse search through predecessor map
+	int currentVertex = p.size() - 1;
+	while (true)
+	{
+		path.push_back(g[currentVertex].pt);
+		currentVertex = p[currentVertex];
+		if (currentVertex == p.size() - 2)
+		{
+			path.push_back(g[currentVertex].pt);
+			break;
+		}
+	}
 
 	return path;
 }
