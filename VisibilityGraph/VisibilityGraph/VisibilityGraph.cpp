@@ -1,17 +1,16 @@
 /******************************************************************************
-    file:      VisibilityGraph.cpp
-    created:   2016-10-23
-    author:    Thomas Horsch
+	file:      VisibilityGraph.cpp
+	created:   2016-10-23
+	author:    Thomas Horsch
 
-    description: it is a brute force algorithm O(n^3), testing the visibility
-    of each pair of edges
-******************************************************************************/
+	description: it is a brute force algorithm O(n^3), testing the visibility
+	of each pair of edges
+	******************************************************************************/
 
 #include <iostream>
 #include <fstream>
 #include "VisibilityGraph.h"
 
-#include <boost/graph/astar_search.hpp>
 #include <boost/geometry/geometries/segment.hpp> 
 #include <boost/geometry/algorithms/intersection.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -21,26 +20,6 @@ typedef boost::geometry::model::segment<Point2D> Segment;
 #define SOLUTION
 
 using namespace std;
-
-/*
-// euclidean distance heuristic
-class distance_heuristic : public boost::astar_heuristic<Graph, double>
-{
-public:
-	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
-	distance_heuristic(Point l, Vertex goal)
-		: m_location(l), m_goal(goal) {}
-	double operator()(Vertex u)
-	{
-		double dx = m_location[m_goal].x - m_location[u].x;
-		double dy = m_location[m_goal].y - m_location[u].y;
-		return ::sqrt(dx * dx + dy * dy);
-	}
-private:
-	Point m_location;
-	Vertex m_goal;
-};
-*/
 
 bool intersectionLineLine(Point p1, Point p2, Point p3, Point p4, Point *intersection, double *t1, double *t2)
 {
@@ -78,6 +57,21 @@ bool intersectionLineLine(Point p1, Point p2, Point p3, Point p4, Point *interse
 	return true;
 }
 
+bool isFirstObstacle(int i)
+{
+	return i < 4;
+}
+
+bool isSecondObstacle(int i)
+{
+	return i > 3 && i < 8;
+}
+
+bool isThirdObstacle(int i)
+{
+	return i > 7 && i < 12;
+}
+
 vector<Point> VisibilityGraph(Graph g, const int nHind)
 {
 	typedef boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
@@ -109,7 +103,7 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 
 	// No Intersection !!!
 	if (intersectionLineLine(Point(0.3f, 0.1f, 0.0f), Point(0.4f, 0.6f, 0.0f), Point(0.2f, 0.4f, 0.0f), Point(0.4f, 0.4f, 0.0f), &tmpPoint, &tmp1, &tmp2))
-		int sfd = 0;
+	int sfd = 0;
 
 	// Intersection !!!
 	Segment AB(Point2D(0.3f, 0.1f), Point2D(0.4f, 0.6f));
@@ -119,7 +113,7 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 
 	for (int i = 0; i < nHind * 4 + 2; ++i){
 
-		for (int j = 0; j < nHind * 4 + 2; ++j){
+		for (int j = i + 1; j < nHind * 4 + 2; ++j){
 			if (i == j) continue;
 			if (i / 4 == j / 4) continue;
 
@@ -135,12 +129,58 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 				if (i != k + 3 && j != k + 3 && i != k && j != k)
 					status |= boost::geometry::intersects(Segment(Point2D(g[i].pt.x, g[i].pt.y), Point2D(g[j].pt.x, g[j].pt.y)), Segment(Point2D(g[k + 3].pt.x, g[k + 3].pt.y), Point2D(g[k].pt.x, g[k].pt.y)));
 
+				if (status)
+					break;
+			}
+
+			if (!status)
+			{
+				if ((isFirstObstacle(i) && isSecondObstacle(j)) ||	// Edge between first and second obstacle
+					(isFirstObstacle(i) && isThirdObstacle(j)) ||
+					(isSecondObstacle(i) && isFirstObstacle(j)) ||
+					(isSecondObstacle(i) && isThirdObstacle(j)) ||
+					(isThirdObstacle(i) && isFirstObstacle(j)) ||
+					(isThirdObstacle(i) && isSecondObstacle(j)))// i == 6 && j == 9 )
+				{
+					// Reduced Graph
+					// Make line longer in both directions
+					Point direction = (g[i].pt - g[j].pt).Normalize();
+					Point2D A = Point2D(g[i].pt.x + direction.x * 2, g[i].pt.y + direction.y * 2);
+					Point2D B = Point2D(g[j].pt.x - direction.x * 2, g[j].pt.y - direction.y * 2);
+					//Point2D A = Point2D(g[i].pt.x, g[i].pt.y);
+					//Point2D B = Point2D(g[j].pt.x, g[j].pt.y);
+
+					int counter = 0;
+					std::vector<Point2D> interPoint;
+					for (int rk = 0; rk < nHind * 4; rk++)
+					{
+						// Check the longer lines for intersection with object
+						if ((rk + 1) % 4 == 0 && rk != 0)
+							bool bInter = boost::geometry::intersection(Segment(A, B),
+								Segment(Point2D(g[rk].pt.x, g[rk].pt.y), Point2D(g[rk - 3].pt.x, g[rk - 3].pt.y)), interPoint);
+						else
+							bool bInter = boost::geometry::intersection(Segment(A, B),
+								Segment(Point2D(g[rk].pt.x, g[rk].pt.y), Point2D(g[rk + 1].pt.x, g[rk + 1].pt.y)), interPoint); 
+
+						int numPoint = interPoint.size();
+						if (numPoint > counter)
+						{
+							if (interPoint.size() > 1 && Point(interPoint[numPoint - 2].x(), interPoint[numPoint - 2].y(), 0.0).Distance(Point(interPoint[numPoint - 1].x(), interPoint[numPoint - 1].y(), 0.0)) < 0.01)
+							{
+								counter--;
+								interPoint.pop_back();
+							}
+							counter++;
+							
+						}
+					}
+					if (counter > 2) status = true;
+				}
 			}
 			if (!status)
 				edge_vector.push_back(Edge(i, j));
 		}
 	}
-
 
 	const int num_edges = edge_vector.size();
 
@@ -148,10 +188,10 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 	for (int i = 0; i < num_edges; ++i)
 		//dirty hack because of Edge(1, 6)! somehow the linelineinteresction doen't find an intersection
 		//if (i != 14)
-			add_edge(edge_vector[i].first, edge_vector[i].second, g);
+		add_edge(edge_vector[i].first, edge_vector[i].second, g);
 
 	// Create things for Dijkstra
-	vertex_descriptor start = boost::vertex(nHind *4, g);
+	vertex_descriptor start = boost::vertex(nHind * 4, g);
 	std::vector<vertex_descriptor> p(num_vertices(g));
 
 	boost::dijkstra_shortest_paths(g, start, boost::predecessor_map(boost::make_iterator_property_map(p.begin(), get(boost::vertex_index, g))));
@@ -181,23 +221,23 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 // Aufruf in gnuplot: plot 'visibilitygraph.data' using 1:2 with lines
 void write_gnuplot_file(Graph g, string filename)
 {
-    ofstream myfile;
-    myfile.open(filename);
+	ofstream myfile;
+	myfile.open(filename);
 
-    // Iterate through the edges and print them out
-    typedef boost::graph_traits<Graph>::edge_iterator edge_iter;
-    std::pair<edge_iter, edge_iter> ep;
-    edge_iter ei, ei_end;
+	// Iterate through the edges and print them out
+	typedef boost::graph_traits<Graph>::edge_iterator edge_iter;
+	std::pair<edge_iter, edge_iter> ep;
+	edge_iter ei, ei_end;
 
-    int cnt = 0; // edge counter
+	int cnt = 0; // edge counter
 
-    for (tie(ei, ei_end) = edges(g); ei != ei_end; ++ei)
-    {
-        myfile << g[ei->m_source].pt.x << " " << g[ei->m_source].pt.y << endl;
-        myfile << g[ei->m_target].pt.x << " " << g[ei->m_target].pt.y << endl << endl;
-        cnt++;
-    }
+	for (tie(ei, ei_end) = edges(g); ei != ei_end; ++ei)
+	{
+		myfile << g[ei->m_source].pt.x << " " << g[ei->m_source].pt.y << endl;
+		myfile << g[ei->m_target].pt.x << " " << g[ei->m_target].pt.y << endl << endl;
+		cnt++;
+	}
 
-    cout << "Number of edges: " << cnt <<  endl;
-    myfile.close();
+	cout << "Number of edges: " << cnt << endl;
+	myfile.close();
 }
