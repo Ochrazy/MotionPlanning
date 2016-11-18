@@ -21,57 +21,6 @@ typedef boost::geometry::model::segment<Point2D> Segment;
 
 using namespace std;
 
-bool intersectionLineLine(Point p1, Point p2, Point p3, Point p4, Point *intersection, double *t1, double *t2)
-{
-	// Store the values for fast access and easy
-	// equations-to-code conversion
-	// intersection = NULL;
-	double x1 = p1.x, x2 = p2.x, x3 = p3.x, x4 = p4.x;
-	double y1 = p1.y, y2 = p2.y, y3 = p3.y, y4 = p4.y;
-
-	double d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-	// If d is zero, there is no intersection
-	if (d == 0)
-		return false;
-
-	// Get the x and y
-	double pre = (x1*y2 - y1*x2), post = (x3*y4 - y3*x4);
-	double x = (pre * (x3 - x4) - (x1 - x2) * post) / d;
-	double y = (pre * (y3 - y4) - (y1 - y2) * post) / d;
-
-	// Check if the x and y coordinates are within both lines
-	if (x < min(x1, x2) || x > max(x1, x2) || x < min(x3, x4) || x > max(x3, x4))
-		return false;
-	if (y < min(y1, y2) || y > max(y1, y2) || y < min(y3, y4) || y > max(y3, y4))
-		return false;
-
-	// Return the point of intersection
-	intersection->x = x;
-	intersection->y = y;
-	intersection->z = 0.0;
-
-	double par_t = intersection->SquareDistance(p1) / p2.SquareDistance(p1);
-	*t1 = sqrt(par_t);
-	par_t = intersection->SquareDistance(p3) / p4.SquareDistance(p3);
-	*t2 = sqrt(par_t);
-	return true;
-}
-
-bool isFirstObstacle(int i)
-{
-	return i < 4;
-}
-
-bool isSecondObstacle(int i)
-{
-	return i > 3 && i < 8;
-}
-
-bool isThirdObstacle(int i)
-{
-	return i > 7 && i < 12;
-}
-
 vector<Point> VisibilityGraph(Graph g, const int nHind)
 {
 	typedef boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
@@ -96,28 +45,19 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 
 #ifdef SOLUTION
 
-	/*
-	Point tmpPoint;
-	double tmp1;
-	double tmp2;
-
-	// No Intersection !!!
-	if (intersectionLineLine(Point(0.3f, 0.1f, 0.0f), Point(0.4f, 0.6f, 0.0f), Point(0.2f, 0.4f, 0.0f), Point(0.4f, 0.4f, 0.0f), &tmpPoint, &tmp1, &tmp2))
-	int sfd = 0;
-
-	// Intersection !!!
-	Segment AB(Point2D(0.3f, 0.1f), Point2D(0.4f, 0.6f));
-	Segment CD(Point2D(0.2f, 0.4f), Point2D(0.4f, 0.4f));
-	bool result = boost::geometry::intersects(AB, CD);
-	*/
-
 	for (int i = 0; i < nHind * 4 + 2; ++i){
 
 		for (int j = i + 1; j < nHind * 4 + 2; ++j){
 			if (i == j) continue;
 			if (i / 4 == j / 4) continue;
 
+			// Make edge longer in both directions for supporting/separating line
+			Point direction = (g[i].pt - g[j].pt).Normalize();
+			Point2D A = Point2D(g[i].pt.x + direction.x * 2, g[i].pt.y + direction.y * 2);
+			Point2D B = Point2D(g[j].pt.x - direction.x * 2, g[j].pt.y - direction.y * 2);
+
 			bool status = false;
+			int numberOfIntersections = 0; // Counter for Intersection test for supporting/separating line
 			for (int k = 0; k < nHind * 4; k += 4)
 			{
 				if (i != k && j != k && i != k + 1 && j != k + 1)
@@ -131,52 +71,28 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 
 				if (status)
 					break;
-			}
 
-			if (!status)
-			{
-				if ((isFirstObstacle(i) && isSecondObstacle(j)) ||	// Edge between first and second obstacle
-					(isFirstObstacle(i) && isThirdObstacle(j)) ||
-					(isSecondObstacle(i) && isFirstObstacle(j)) ||
-					(isSecondObstacle(i) && isThirdObstacle(j)) ||
-					(isThirdObstacle(i) && isFirstObstacle(j)) ||
-					(isThirdObstacle(i) && isSecondObstacle(j)))// i == 6 && j == 9 )
+				// Reduce the Graph with supporting/separating line 'algorithm'
+				if (i < nHind * 4 && j < nHind * 4  &&	// check if i and j belong to an obstacle (not start or end point)
+					i / 4 != j / 4 &&					// check if i-th and j-th index are belonging to different obstacles
+					(i / 4 == k / 4 || j / 4 == k / 4)) // check if current index k of an obstacle accords to the i-th or j-th vertex
+														// because then the edge is to be checked for intersections between these two obstacles 
 				{
-					// Reduced Graph
-					// Make line longer in both directions
-					Point direction = (g[i].pt - g[j].pt).Normalize();
-					Point2D A = Point2D(g[i].pt.x + direction.x * 2, g[i].pt.y + direction.y * 2);
-					Point2D B = Point2D(g[j].pt.x - direction.x * 2, g[j].pt.y - direction.y * 2);
-					//Point2D A = Point2D(g[i].pt.x, g[i].pt.y);
-					//Point2D B = Point2D(g[j].pt.x, g[j].pt.y);
-
-					int counter = 0;
-					std::vector<Point2D> interPoint;
-					for (int rk = 0; rk < nHind * 4; rk++)
-					{
-						// Check the longer lines for intersection with object
-						if ((rk + 1) % 4 == 0 && rk != 0)
-							bool bInter = boost::geometry::intersection(Segment(A, B),
-								Segment(Point2D(g[rk].pt.x, g[rk].pt.y), Point2D(g[rk - 3].pt.x, g[rk - 3].pt.y)), interPoint);
-						else
-							bool bInter = boost::geometry::intersection(Segment(A, B),
-								Segment(Point2D(g[rk].pt.x, g[rk].pt.y), Point2D(g[rk + 1].pt.x, g[rk + 1].pt.y)), interPoint); 
-
-						int numPoint = interPoint.size();
-						if (numPoint > counter)
-						{
-							if (interPoint.size() > 1 && Point(interPoint[numPoint - 2].x(), interPoint[numPoint - 2].y(), 0.0).Distance(Point(interPoint[numPoint - 1].x(), interPoint[numPoint - 1].y(), 0.0)) < 0.01)
-							{
-								counter--;
-								interPoint.pop_back();
-							}
-							counter++;
-							
-						}
-					}
-					if (counter > 2) status = true;
+					numberOfIntersections += boost::geometry::intersects(Segment(A, B),
+						Segment(Point2D(g[k].pt.x, g[k].pt.y), Point2D(g[k + 1].pt.x, g[k + 1].pt.y))) ? 1 : 0;
+					numberOfIntersections += boost::geometry::intersects(Segment(A, B),
+						Segment(Point2D(g[k + 1].pt.x, g[k + 1].pt.y), Point2D(g[k + 2].pt.x, g[k + 2].pt.y))) ? 1 : 0;
+					numberOfIntersections += boost::geometry::intersects(Segment(A, B),
+						Segment(Point2D(g[k + 2].pt.x, g[k + 2].pt.y), Point2D(g[k + 3].pt.x, g[k + 3].pt.y))) ? 1 : 0;
+					numberOfIntersections += boost::geometry::intersects(Segment(A, B),
+						Segment(Point2D(g[k + 3].pt.x, g[k + 3].pt.y), Point2D(g[k].pt.x, g[k].pt.y))) ? 1 : 0;				
 				}
 			}
+
+			// A supporting/separating line only has 2 Intersections (in this case 4, because every vertex has two edges)
+			if (numberOfIntersections > 4) status = true;
+
+			// Add the surviving edges
 			if (!status)
 				edge_vector.push_back(Edge(i, j));
 		}
@@ -184,16 +100,13 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 
 	const int num_edges = edge_vector.size();
 
-	// add the edges to the graph object
+	// Add the edges to the graph object
 	for (int i = 0; i < num_edges; ++i)
-		//dirty hack because of Edge(1, 6)! somehow the linelineinteresction doen't find an intersection
-		//if (i != 14)
 		add_edge(edge_vector[i].first, edge_vector[i].second, g);
 
-	// Create things for Dijkstra
+	// Apply Dijkstra's shortest paths algorithm on the final graph
 	vertex_descriptor start = boost::vertex(nHind * 4, g);
 	std::vector<vertex_descriptor> p(num_vertices(g));
-
 	boost::dijkstra_shortest_paths(g, start, boost::predecessor_map(boost::make_iterator_property_map(p.begin(), get(boost::vertex_index, g))));
 
 #endif SOLUTION
@@ -201,17 +114,13 @@ vector<Point> VisibilityGraph(Graph g, const int nHind)
 	write_gnuplot_file(g, "VisibilityGraph.dat");
 
 	// Write the path: reverse search through predecessor map
-	int currentVertex = p.size() - 1;
-	while (true)
+	int currentVertex = p.size() - 1; // end point
+	while (currentVertex != p.size() - 2) // start point
 	{
 		path.push_back(g[currentVertex].pt);
 		currentVertex = p[currentVertex];
-		if (currentVertex == p.size() - 2)
-		{
-			path.push_back(g[currentVertex].pt);
-			break;
-		}
 	}
+	path.push_back(g[currentVertex].pt);
 
 	return path;
 }
