@@ -37,7 +37,7 @@ int _tmain(int argc, _TCHAR* argv[])
     knn_rtree_t rtree;
     const float stepsize = .025f;
 
-#define TEST_CASE 0
+#define TEST_CASE 4
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 	// Example
@@ -162,32 +162,40 @@ int _tmain(int argc, _TCHAR* argv[])
 	//rtree.insert(make_pair(MyWorm(qStart), nNodes));
 	result.clear();
 	g[nNodes].q_ = qStart;
-	rtree.query(boost::geometry::index::nearest(MyWorm(qStart), 5), std::back_inserter(result));
+	rtree.query(boost::geometry::index::nearest(MyWorm(qStart), 100), std::back_inserter(result));
+	bool bFoundEdge = false;
 	for each (std::pair<MyWorm, int> worm in result)
 	{
 		if (testConnection(worm.first.q(), qStart, cell))
 		{
 			boost::add_edge(nNodes, worm.second, g);
+			bFoundEdge = true;
 			break;
 		}
 	}
 	result.clear();
+	if (!bFoundEdge)
+		std::cout << "Could not connect Start Configuration";
 
     // 4. Step: connecting goal configuration to graph
     cout << "4. Step: connecting goal configuration to graph" << endl;
 	//rtree.insert(make_pair(MyWorm(qGoal), nNodes + 1));
 	result.clear();
 	g[nNodes + 1].q_ = qGoal;
-	rtree.query(boost::geometry::index::nearest(MyWorm(qGoal), 5), std::back_inserter(result));
+	rtree.query(boost::geometry::index::nearest(MyWorm(qGoal), 100), std::back_inserter(result));
+	bFoundEdge = false;
 	for each (std::pair<MyWorm, int> worm in result)
 	{
 		if (testConnection(worm.first.q(), qGoal, cell))
 		{
 			boost::add_edge(nNodes + 1, worm.second, g);
+			bFoundEdge = true;
 			break;
 		}
 	}
 	result.clear();
+	if (!bFoundEdge)
+		std::cout << "Could not connect Goal Configuration";
 	
     // 5. Step: searching for shortest path
     cout << "5. Step: searching for shortest path" << endl;
