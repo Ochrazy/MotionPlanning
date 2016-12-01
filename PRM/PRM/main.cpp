@@ -204,7 +204,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		path.push_back(g[currentVertex].q_);
 		currentVertex = p[currentVertex];
 
-		if (path.size() > 10000)
+		if (path.size() > 1000000)
 			return EXIT_FAILURE;
 	}
 	path.push_back(g[currentVertex].q_);
