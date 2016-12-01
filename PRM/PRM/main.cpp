@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include <iostream>
 #include "cell.h"
+#include <iostream>
+#include <random>
 
 using namespace std;
 namespace bg = boost::geometry;
@@ -28,6 +30,24 @@ bool testConnection(Eigen::VectorXd firstNode, Eigen::VectorXd secondNode, WormC
 
 	return true;
 }
+
+std::default_random_engine generator;
+
+Eigen::VectorXd nextGaussianVector(Eigen::VectorXd baseVector)
+{
+	std::normal_distribution<float> x(baseVector[0], 0.001f);
+	std::normal_distribution<float> y(baseVector[1], 0.001f);
+	std::normal_distribution<float> a(RAD2DEG(baseVector[2]), 1);
+	std::normal_distribution<float> b(RAD2DEG(baseVector[3]), 1);
+	std::normal_distribution<float> c(RAD2DEG(baseVector[4]), 1);
+
+	Eigen::VectorXd randomVector(5);
+
+	randomVector << x(generator), y(generator), DEG2RAD(a(generator)), DEG2RAD(b(generator)), DEG2RAD(c(generator));
+
+	return randomVector;
+}
+
 /***********************************************************************************************************************************/
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -37,7 +57,7 @@ int _tmain(int argc, _TCHAR* argv[])
     knn_rtree_t rtree;
     const float stepsize = .025f;
 
-#define TEST_CASE 4
+#define TEST_CASE 0
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 	// Example
@@ -119,9 +139,8 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 	
-	const int nNodes = 25000;
-	graph_t g(nNodes+2);
-
+	int nNodes = 25000;
+	graph_t g; //(nNodes + 2);
 	/*Eigen::VectorXd v(5);
 	Eigen::VectorXd v2(5);
 
@@ -133,34 +152,69 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	// 1. step: building up a graph g consisting of nNodes vertices
 	cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
-	
-	std::default_random_engine generator;
-	std::normal_distribution<double> distribution(.5, .25);
 
+	/*
+	// Gaussian Sampling Strategy
+	int numberNodes = 0;
+	for (int i = 0; i<nNodes; ++i) {
+		// Get random sample in the space
+		Eigen::VectorXd sample = cell.NextRandomCspace();
+
+		// create a second sample gaussian distribution
+		Eigen::VectorXd sample2 = nextGaussianVector(sample);
+
+		if (cell.CheckPosition(sample) && !cell.CheckPosition(sample2))
+		{
+			rtree.insert(make_pair(MyWorm(sample), numberNodes));
+			boost::add_vertex(g);
+			g[numberNodes].q_ = sample;
+			numberNodes++;
+		}
+		else if (!cell.CheckPosition(sample) && cell.CheckPosition(sample2))
+		{
+			rtree.insert(make_pair(MyWorm(sample2), numberNodes));
+			boost::add_vertex(g);
+			g[numberNodes].q_ = sample2;
+			numberNodes++;
+		}
+	}
+	nNodes = numberNodes;
+	*/
+
+	
+	// NextRandomCfree Sampling Strategy
 	for (int i = 0; i<nNodes; ++i) {
 		Eigen::VectorXd sample = cell.NextRandomCfree();
 		rtree.insert(make_pair(MyWorm(sample), i));
+		boost::add_vertex(g);
 		g[i].q_ = sample;
 	}
+	
+	std::cout << "Number Of Nodes: " << nNodes << std::endl;
 
     // 2. step: building edges for the graph, if the connection of 2 nodes are in free space
     cout << "2. Step: buildung edges for the graph" << endl;
 	std::vector<std::pair<MyWorm, int>> result;
-	
+	int numberEdges = 0;
 	for (int i = 0; i < nNodes; ++i) {
 		rtree.query(boost::geometry::index::nearest(MyWorm(g[i].q_), 5), std::back_inserter(result));
 		for each (std::pair<MyWorm, int> worm in result)
 		{
-			if(testConnection(worm.first.q(), g[i].q_, cell))
+			if (testConnection(worm.first.q(), g[i].q_, cell))
+			{
 				boost::add_edge(i, worm.second, g);
+				numberEdges++;
+			}
 		}
 		result.clear();
 	}
-	
+	std::cout << "Number Of Edges: " << numberEdges << std::endl;
+
     // 3. Step: connecting start configuration to graph
     cout << "3. Step: connecting start configuration to graph" << endl;
 	//rtree.insert(make_pair(MyWorm(qStart), nNodes));
 	result.clear();
+	boost::add_vertex(g);
 	g[nNodes].q_ = qStart;
 	rtree.query(boost::geometry::index::nearest(MyWorm(qStart), 100), std::back_inserter(result));
 	bool bFoundEdge = false;
@@ -181,6 +235,7 @@ int _tmain(int argc, _TCHAR* argv[])
     cout << "4. Step: connecting goal configuration to graph" << endl;
 	//rtree.insert(make_pair(MyWorm(qGoal), nNodes + 1));
 	result.clear();
+	boost::add_vertex(g);
 	g[nNodes + 1].q_ = qGoal;
 	rtree.query(boost::geometry::index::nearest(MyWorm(qGoal), 100), std::back_inserter(result));
 	bFoundEdge = false;
@@ -196,6 +251,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	result.clear();
 	if (!bFoundEdge)
 		std::cout << "Could not connect Goal Configuration";
+
+	write_gnuplot_file(g, "VisibilityGraph.dat");
 	
     // 5. Step: searching for shortest path
     cout << "5. Step: searching for shortest path" << endl;
@@ -212,10 +269,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		path.push_back(g[currentVertex].q_);
 		currentVertex = p[currentVertex];
 
-		if (path.size() > 1000000)
+		if (path.size() > 100000)
 			return EXIT_FAILURE;
 	}
 	path.push_back(g[currentVertex].q_);
+
+	std::cout << "Path size: " << path.size() << std::endl;
+	std::cout << "Path Refinement:" << std::endl;
 
 	// Path Refinement
 	// Go through path
@@ -234,8 +294,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	reverse(path.begin(), path.end());
 	
+	std::cout << "Path size: " << path.size() << std::endl;
+
 	write_easyrob_program_file(path, "prm.prg");
-	write_gnuplot_file(g, "VisibilityGraph.dat");
 	
     return EXIT_SUCCESS;
 }
