@@ -35,11 +35,11 @@ std::default_random_engine generator;
 
 Eigen::VectorXd nextGaussianVector(Eigen::VectorXd baseVector)
 {
-	std::normal_distribution<float> x(baseVector[0], 0.001f);
-	std::normal_distribution<float> y(baseVector[1], 0.001f);
-	std::normal_distribution<float> a(RAD2DEG(baseVector[2]), 1);
-	std::normal_distribution<float> b(RAD2DEG(baseVector[3]), 1);
-	std::normal_distribution<float> c(RAD2DEG(baseVector[4]), 1);
+	std::normal_distribution<float> x(baseVector[0], 0.005f);
+	std::normal_distribution<float> y(baseVector[1], 0.005f);
+	std::normal_distribution<float> a(RAD2DEG(baseVector[2]), 5);
+	std::normal_distribution<float> b(RAD2DEG(baseVector[3]), 5);
+	std::normal_distribution<float> c(RAD2DEG(baseVector[4]), 5);
 
 	Eigen::VectorXd randomVector(5);
 
@@ -139,7 +139,9 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 	
-	int nNodes = 25000;
+	int nNodes = 300000; // for gaussian distribution
+	// int nNodes = 25000; // basic strategy
+
 	graph_t g; //(nNodes + 2);
 	/*Eigen::VectorXd v(5);
 	Eigen::VectorXd v2(5);
@@ -153,7 +155,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// 1. step: building up a graph g consisting of nNodes vertices
 	cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
 
-	/*
+	
 	// Gaussian Sampling Strategy
 	int numberNodes = 0;
 	for (int i = 0; i<nNodes; ++i) {
@@ -179,23 +181,23 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 	nNodes = numberNodes;
-	*/
+	
 
 	
-	// NextRandomCfree Sampling Strategy
-	for (int i = 0; i<nNodes; ++i) {
-		Eigen::VectorXd sample = cell.NextRandomCfree();
-		rtree.insert(make_pair(MyWorm(sample), i));
-		boost::add_vertex(g);
-		g[i].q_ = sample;
-	}
+	//// NextRandomCfree Sampling Strategy
+	//for (int i = 0; i<nNodes; ++i) {
+	//	Eigen::VectorXd sample = cell.NextRandomCfree();
+	//	rtree.insert(make_pair(MyWorm(sample), i));
+	//	boost::add_vertex(g);
+	//	g[i].q_ = sample;
+	//}
 	
 	std::cout << "Number Of Nodes: " << nNodes << std::endl;
 
     // 2. step: building edges for the graph, if the connection of 2 nodes are in free space
     cout << "2. Step: buildung edges for the graph" << endl;
 	std::vector<std::pair<MyWorm, int>> result;
-	int numberEdges = 0;
+	unsigned int numberEdges = 0;
 	for (int i = 0; i < nNodes; ++i) {
 		rtree.query(boost::geometry::index::nearest(MyWorm(g[i].q_), 5), std::back_inserter(result));
 		for each (std::pair<MyWorm, int> worm in result)
@@ -217,18 +219,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	boost::add_vertex(g);
 	g[nNodes].q_ = qStart;
 	rtree.query(boost::geometry::index::nearest(MyWorm(qStart), 100), std::back_inserter(result));
-	bool bFoundEdge = false;
+	int bFoundEdge = 0;
 	for each (std::pair<MyWorm, int> worm in result)
 	{
 		if (testConnection(worm.first.q(), qStart, cell))
 		{
 			boost::add_edge(nNodes, worm.second, g);
-			bFoundEdge = true;
-			break;
+			bFoundEdge++;
+			if (bFoundEdge > 4) break;
 		}
 	}
 	result.clear();
-	if (!bFoundEdge)
+	if (bFoundEdge == 0)
 		std::cout << "Could not connect Start Configuration";
 
     // 4. Step: connecting goal configuration to graph
@@ -238,18 +240,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	boost::add_vertex(g);
 	g[nNodes + 1].q_ = qGoal;
 	rtree.query(boost::geometry::index::nearest(MyWorm(qGoal), 100), std::back_inserter(result));
-	bFoundEdge = false;
+	bFoundEdge = 0;
 	for each (std::pair<MyWorm, int> worm in result)
 	{
 		if (testConnection(worm.first.q(), qGoal, cell))
 		{
 			boost::add_edge(nNodes + 1, worm.second, g);
-			bFoundEdge = true;
-			break;
+			bFoundEdge++;
+			if (bFoundEdge > 4) break;
 		}
 	}
 	result.clear();
-	if (!bFoundEdge)
+	if (bFoundEdge == 0)
 		std::cout << "Could not connect Goal Configuration";
 
 	write_gnuplot_file(g, "VisibilityGraph.dat");
@@ -269,8 +271,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		path.push_back(g[currentVertex].q_);
 		currentVertex = p[currentVertex];
 
-		if (path.size() > 100000)
+		if (path.size() > numberEdges)
+		{
+			std::cout << "path is too big failure";
 			return EXIT_FAILURE;
+		}
 	}
 	path.push_back(g[currentVertex].q_);
 
