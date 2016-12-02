@@ -13,7 +13,7 @@ namespace bgi = boost::geometry::index;
 bool testConnection(Eigen::VectorXd firstNode, Eigen::VectorXd secondNode, WormCell& cell, float stepsize = 0.025f)
 {
 	Eigen::VectorXd segment(secondNode - firstNode), delta(5);
-	delta = segment.normalized() * stepsize; // stepsize .025
+	delta = segment.normalized() * stepsize;
 	int steps = int(segment.norm() / stepsize);
 	Eigen::VectorXd tmpNode = firstNode;
 
@@ -32,8 +32,8 @@ bool testConnection(Eigen::VectorXd firstNode, Eigen::VectorXd secondNode, WormC
 	return true;
 }
 
+// Generate Random gaussian distributed Vectors
 std::default_random_engine generator;
-
 Eigen::VectorXd nextGaussianVector(Eigen::VectorXd baseVector)
 {
 	std::normal_distribution<float> x(baseVector[0], 0.005f);
@@ -63,6 +63,8 @@ int _tmain(int argc, _TCHAR* argv[])
 #if TEST_CASE == 0
 	// Example
 	//cout << "Example" << endl;
+
+	// super Test 0
 	qStart << .0, -.2, DEG2RAD(0.), DEG2RAD(0.), DEG2RAD(0.);
 	qGoal << .6, .6, DEG2RAD(90.f), DEG2RAD(0.f), DEG2RAD(0.f);
 
@@ -141,24 +143,17 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 	
 	auto start_time = std::chrono::high_resolution_clock::now();
-
-	int nNodes = 300000; // for gaussian distribution
-	// int nNodes = 25000; // basic strategy
-
-	graph_t g; //(nNodes + 2);
-	/*Eigen::VectorXd v(5);
-	Eigen::VectorXd v2(5);
-
-	v << 0.986542f, 0.92289f, DEG2RAD(132.256f), DEG2RAD(-11.9016f), DEG2RAD(-107.666f);
-	v2 << 0.788461f, 0.56383f, DEG2RAD(141.03f), DEG2RAD(-4.15792f), DEG2RAD(-116.924f);
-
-	bool what = testConnection( v, v2, cell);*/
-
+	graph_t g; // the graph
 	
 	// 1. step: building up a graph g consisting of nNodes vertices
-	cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
-
+	cout << "1. Step: building nodes for the graph" << endl;
 	
+#define SAMPLING_STRATEGY 0
+#ifdef SAMPLING_STRATEGY
+#if SAMPLING_STRATEGY == 0
+	std::cout << "Gaussian Sampling Strategy" << std::endl;
+	int nNodes = 300000; // for gaussian distribution
+
 	// Gaussian Sampling Strategy
 	int numberNodes = 0;
 	for (int i = 0; i<nNodes; ++i) {
@@ -184,16 +179,20 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 	nNodes = numberNodes;
-	
 
-	
-	//// NextRandomCfree Sampling Strategy
-	//for (int i = 0; i<nNodes; ++i) {
-	//	Eigen::VectorXd sample = cell.NextRandomCfree();
-	//	rtree.insert(make_pair(MyWorm(sample), i));
-	//	boost::add_vertex(g);
-	//	g[i].q_ = sample;
-	//}
+#elif SAMPLING_STRATEGY == 1
+	std::cout << "Basic Sampling Strategy" << std::endl;
+	int nNodes = 50000; // basic strategy
+
+	// NextRandomCfree Sampling Strategy
+	for (int i = 0; i<nNodes; ++i) {
+		Eigen::VectorXd sample = cell.NextRandomCfree();
+		rtree.insert(make_pair(MyWorm(sample), i));
+		boost::add_vertex(g);
+		g[i].q_ = sample;
+	}
+#endif
+#endif
 	
 	std::cout << "Number Of Nodes: " << nNodes << std::endl;
 
@@ -274,9 +273,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		path.push_back(g[currentVertex].q_);
 		currentVertex = p[currentVertex];
 
-		if (path.size() > numberEdges)
+		if (path.size() > nNodes)
 		{
-			std::cout << "path is too big failure";
+			std::cout << "Failure: Could not find a path from start to goal!";
 			return EXIT_FAILURE;
 		}
 	}
