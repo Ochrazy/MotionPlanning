@@ -3,6 +3,7 @@
 #include "cell.h"
 #include <iostream>
 #include <random>
+#include <chrono>
 
 using namespace std;
 namespace bg = boost::geometry;
@@ -139,6 +140,8 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 	
+	auto start_time = std::chrono::high_resolution_clock::now();
+
 	int nNodes = 300000; // for gaussian distribution
 	// int nNodes = 25000; // basic strategy
 
@@ -300,6 +303,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	reverse(path.begin(), path.end());
 	
 	std::cout << "Path size: " << path.size() << std::endl;
+
+	auto end_time = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> diff = end_time - start_time;
+
+	std::cout << "Time to find a path of size " << path.size() << "for " << nNodes << " nodes and " << numberEdges << " edges: " << diff.count() << " s\n";
+
+	std::vector<int> component(boost::num_vertices(g));
+	int num = boost::connected_components(g, &component[0]);
+	std::cout << "Number of connected Components: " << num << std::endl;
 
 	write_easyrob_program_file(path, "prm.prg");
 	
