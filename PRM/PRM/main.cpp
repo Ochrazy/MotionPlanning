@@ -59,7 +59,7 @@ int _tmain(int argc, _TCHAR* argv[])
     const float stepsize = .025f;
 	int number_of_nearest_neighbour = 6;
 
-#define TEST_CASE 4
+#define TEST_CASE 0
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 	cout << "Test case 0" << endl;
@@ -105,10 +105,10 @@ int _tmain(int argc, _TCHAR* argv[])
 #elif TEST_CASE == 9
 	cout << "Test case 9 / unreachable goal" << endl;
 	qStart << .6, .95, DEG2RAD(-90.f), 0., 0.;
-	qGoal << .6, 1.05, DEG2RAD(-90.f), 0., 0.;
+	qGoal << .6, 1.05, DEG2RAD(-90.f), 0., 0.; // Why would this be unreachable ?
 #elif TEST_CASE == 10
 	cout << "Test case 10 / unreachable start" << endl;
-	qStart << .6, 1.05, DEG2RAD(-90.f), 0., 0.;
+	qStart << .6, 1.05, DEG2RAD(-90.f), 0., 0.; // Why would this be unreachable ?
 	qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
 #endif
 #endif
@@ -197,7 +197,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
     // 3. Step: connecting start configuration to graph
     cout << "3. Step: connecting start configuration to graph" << endl;
-	//rtree.insert(make_pair(MyWorm(qStart), nNodes));
 	result.clear();
 	boost::add_vertex(g);
 	g[nNodes].q_ = qStart;
@@ -214,11 +213,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	result.clear();
 	if (bFoundEdge == 0)
-		std::cout << "Could not connect Start Configuration";
+	{
+		std::cout << "Failure: Could not connect Start Configuration" << std::endl;
+		return EXIT_FAILURE;
+	}
 
     // 4. Step: connecting goal configuration to graph
     cout << "4. Step: connecting goal configuration to graph" << endl;
-	//rtree.insert(make_pair(MyWorm(qGoal), nNodes + 1));
 	result.clear();
 	boost::add_vertex(g);
 	g[nNodes + 1].q_ = qGoal;
@@ -235,11 +236,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	result.clear();
 	if (bFoundEdge == 0)
-		std::cout << "Could not connect Goal Configuration";
+	{
+		std::cout << "Failure: Could not connect Goal Configuration" << std::endl;
+		return EXIT_FAILURE;
+	}
 	
     // 5. Step: searching for shortest path
     cout << "5. Step: searching for shortest path" << endl;
-	write_gnuplot_file(g, "VisibilityGraph.dat");
+
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_descriptor;
 	vertex_descriptor start = boost::vertex(nNodes, g);
 	std::vector<vertex_descriptor> p(num_vertices(g));
@@ -292,7 +296,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::cout << "Number of connected Components: " << num << std::endl;
 	std::cout << "Number of Nearest Neighbours: " << number_of_nearest_neighbour << std::endl;
 
-	
+	write_gnuplot_file(g, "VisibilityGraph.dat");
 	write_easyrob_program_file(path, "prm.prg");
 	
     return EXIT_SUCCESS;
