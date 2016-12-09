@@ -1,303 +1,194 @@
 #include "stdafx.h"
 #include <iostream>
 #include "cell.h"
-#include <iostream>
-#include <random>
-#include <chrono>
+
+#include <limits>
+
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/segment.hpp>
 
 using namespace std;
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
-// test connection
-bool testConnection(Eigen::VectorXd firstNode, Eigen::VectorXd secondNode, WormCell& cell, float stepsize = 0.025f)
+
+typedef boost::geometry::model::d2::point_xy<double> point_type;
+typedef boost::geometry::model::segment<point_type> segment_type;
+
+double GetClosestPoint(Eigen::VectorXd A, Eigen::VectorXd B, Eigen::VectorXd P)
 {
-	Eigen::VectorXd segment(secondNode - firstNode), delta(5);
-	delta = segment.normalized() * stepsize;
-	int steps = int(segment.norm() / stepsize);
-	Eigen::VectorXd tmpNode = firstNode;
-
-	do
-	{
-		if (!cell.CheckPosition(tmpNode))
-		{
-			return false;
-		}
-		else
-		{
-			tmpNode += delta;
-		}
-	} while (--steps > 0);
-
-	return true;
+    Eigen::VectorXd AP = P - A;
+    Eigen::VectorXd AB = B - A;
+    double ab2 = AB[0] * AB[0] + AB[1] * AB[1];
+    double ap_ab = AP[0] * AB[0] + AP[1] * AB[1];
+    double t = ap_ab / ab2;
+    Eigen::VectorXd Closest = A + AB * t;
+    return t;
 }
 
-// Generate Random gaussian distributed Vectors
-std::default_random_engine generator;
-Eigen::VectorXd nextGaussianVector(Eigen::VectorXd baseVector)
-{
-	std::normal_distribution<float> x(baseVector[0], 0.01f);
-	std::normal_distribution<float> y(baseVector[1], 0.01f);
-	std::normal_distribution<float> a(RAD2DEG(baseVector[2]), 5);
-	std::normal_distribution<float> b(RAD2DEG(baseVector[3]), 5);
-	std::normal_distribution<float> c(RAD2DEG(baseVector[4]), 5);
-
-	Eigen::VectorXd randomVector(5);
-
-	randomVector << x(generator), y(generator), DEG2RAD(a(generator)), DEG2RAD(b(generator)), DEG2RAD(c(generator));
-
-	return randomVector;
-}
 
 /***********************************************************************************************************************************/
 int _tmain(int argc, _TCHAR* argv[])
 {
     WormCell cell;
-    Eigen::VectorXd qStart(5), qGoal(5), q(5);
+    Eigen::VectorXd qStart(2), qGoal(5), q(5);
     vector<Eigen::VectorXd> path; // create a point vector for storing the path
+    graph_t g;
     knn_rtree_t rtree;
     const float stepsize = .025f;
-	int number_of_nearest_neighbour = 6;
 
 #define TEST_CASE 0
 #ifdef TEST_CASE
 #if TEST_CASE == 0
-	cout << "Test case 0" << endl;
+    // Example
+    cout << "Example" << endl;
+    qStart << 0.5, 0.5, 0., 0., 0.;
+    qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
 
-	// super Test 0
-	//qStart << .0, -.2, DEG2RAD(0.), DEG2RAD(0.), DEG2RAD(0.);
-	//qGoal << .6, .6, DEG2RAD(90.f), DEG2RAD(0.f), DEG2RAD(0.f);
+    Eigen::VectorXd segment(qGoal - qStart), delta(5);
+    delta = segment.normalized() * stepsize;
+    int steps = int(segment.norm() / stepsize);
 
-	qStart << 0., 0., 0., 0., 0.;
-	qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
+    do
+    {
+        if (!cell.CheckPosition(qStart))
+        {
+            for (int i = 0; i < 10; ++i)
+            {
+                path.push_back(qStart);
+                qStart += delta * .1f;
+            }
+        }
+        else
+        {
+            path.push_back(qStart);
+            qStart += delta;
+        }
+    } while (--steps > 0);
+
+    path.push_back(qGoal);
+    reverse(path.begin(), path.end());
+    write_easyrob_program_file(path, "example.prg", false);
+    path.clear();
+    // !Example
 #elif TEST_CASE == 1
-	cout << "Test case 1" << endl;
-	qStart << .6, .1, 0., 0., 0.;
+    cout << "Test case 1" << endl;
+    qStart << .6, .1, 0., 0., 0.;
     qGoal << .1, .8, DEG2RAD(-90.f), 0., 0.;
 #elif TEST_CASE == 2
-	cout << "Test case 2" << endl;
-	qStart << .1, .8, DEG2RAD(-90.f), DEG2RAD(-180.f), DEG2RAD(180.f);
-	qGoal << .9, .4, DEG2RAD(-90.f), DEG2RAD(-180.f), DEG2RAD(180.f);
+    cout << "Test case 2" << endl;
+    qStart << .1, .8, DEG2RAD(-90.f), DEG2RAD(-180.f), DEG2RAD(180.f);
+    qGoal << .9, .4, DEG2RAD(-90.f), DEG2RAD(-180.f), DEG2RAD(180.f);
 #elif TEST_CASE == 3
-	cout << "Test case 3" << endl;
-	qStart << .9, .4, DEG2RAD(-90.f), DEG2RAD(-180.f), DEG2RAD(180.f);
-	qGoal << .9, .75, DEG2RAD(-180.f), 0., 0.;
+    cout << "Test case 3" << endl;
+    qStart << .9, .4, DEG2RAD(-90.f), DEG2RAD(-180.f), DEG2RAD(180.f);
+    qGoal << .9, .75, DEG2RAD(-180.f), 0., 0.;
 #elif TEST_CASE == 4
-	cout << "Test case 4" << endl;
-	qStart << .9, .75, DEG2RAD(-180.f), 0., 0.;
-	qGoal << .5, .45, DEG2RAD(-180.f), 0., 0.;
+    cout << "Test case 4" << endl;
+    qStart << .9, .75, DEG2RAD(-180.f), 0., 0.;
+    qGoal << .5, .45, DEG2RAD(-180.f), 0., 0.;
 #elif TEST_CASE == 5
-	cout << "Test case 5" << endl;
-	qStart << .5, .45, DEG2RAD(-180.f), 0., 0.;
-	qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
+    cout << "Test case 5" << endl;
+    qStart << .5, .45, DEG2RAD(-180.f), 0., 0.;
+    qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
 #elif TEST_CASE == 6
-	cout << "Test case 6" << endl;
-	qStart << .5, .45, DEG2RAD(-180.f), 0., 0.;
-	qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
+    cout << "Test case 6" << endl;
+    qStart << .5, .45, DEG2RAD(-180.f), 0., 0.;
+    qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
 #elif TEST_CASE == 7
-	cout << "Test case 7 / colliding goal" << endl;
-	qStart << .6, .95, DEG2RAD(-90.f), 0., 0.;
-	qGoal << .7, .95, DEG2RAD(-90.f), 0., 0.;
+    cout << "Test case 7 / colliding goal" << endl;
+    qStart << .6, .95, DEG2RAD(-90.f), 0., 0.;
+    qGoal << .7, .95, DEG2RAD(-90.f), 0., 0.;
 #elif TEST_CASE == 8
-	cout << "Test case 8 / colliding start" << endl;
-	qStart << .7, .95, DEG2RAD(-90.f), 0., 0.;
-	qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
+    cout << "Test case 8 / colliding start" << endl;
+    qStart << .7, .95, DEG2RAD(-90.f), 0., 0.;
+    qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
 #elif TEST_CASE == 9
-	cout << "Test case 9 / unreachable goal" << endl;
-	qStart << .6, .95, DEG2RAD(-90.f), 0., 0.;
-	qGoal << .6, 1.05, DEG2RAD(-90.f), 0., 0.; // Why would this be unreachable ?
+    cout << "Test case 9 / unreachable goal" << endl;
+    qStart << .6, .95, DEG2RAD(-90.f), 0., 0.;
+    qGoal << .6, 1.05, DEG2RAD(-90.f), 0., 0.;
 #elif TEST_CASE == 10
-	cout << "Test case 10 / unreachable start" << endl;
-	qStart << .6, 1.05, DEG2RAD(-90.f), 0., 0.; // Why would this be unreachable ?
-	qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
+    cout << "Test case 10 / unreachable start" << endl;
+    qStart << .6, 1.05, DEG2RAD(-90.f), 0., 0.;
+    qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
 #endif
 #endif
-	
-	auto start_time = std::chrono::high_resolution_clock::now();
-	graph_t g; // the graph
-	
-	// 1. step: building up a graph g consisting of nNodes vertices
-	cout << "1. Step: building nodes for the graph" << endl;
-	
-#define SAMPLING_STRATEGY 0
-#ifdef SAMPLING_STRATEGY
-#if SAMPLING_STRATEGY == 0
-	std::cout << "Gaussian Sampling Strategy" << std::endl;
-	int nNodes = 120000; // for gaussian distribution
-	int numberNodes = 0;
 
-	// Create random Samples first to cover free space better
-	for (int i = 0; i<1000; ++i) {
-		Eigen::VectorXd sample = cell.NextRandomCfree();
-		rtree.insert(make_pair(MyWorm(sample), i));
-		boost::add_vertex(g);
-		g[i].q_ = sample;
-		numberNodes++;
-	}
-	
-	// Gaussian Sampling Strategy
-	for (int i = 0; i<nNodes; ++i) {
-		// Get random sample in the space
-		Eigen::VectorXd sample = cell.NextRandomCspace();
+    const int nNodes = 25000;
+    int additionalNodes = 1;
+    // 1. step: building up a graph g consisting of nNodes vertices
+    cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
 
-		// create a second sample gaussian distribution
-		Eigen::VectorXd sample2 = nextGaussianVector(sample);
+    std::vector<std::pair<MyWorm, int>> result;
 
-		if (cell.CheckPosition(sample) && !cell.CheckPosition(sample2))
-		{
-			rtree.insert(make_pair(MyWorm(sample), numberNodes));
-			boost::add_vertex(g);
-			g[numberNodes].q_ = sample;
-			numberNodes++;
-		}
-		else if (!cell.CheckPosition(sample) && cell.CheckPosition(sample2))
-		{
-			rtree.insert(make_pair(MyWorm(sample2), numberNodes));
-			boost::add_vertex(g);
-			g[numberNodes].q_ = sample2;
-			numberNodes++;
-		}
-	}
-	nNodes = numberNodes;
-	
+    rtree.insert(make_pair(MyWorm(qStart), 0));
+    boost::add_vertex(g);
+    g[0].q_ = qStart;
 
-#elif SAMPLING_STRATEGY == 1
-	std::cout << "Basic Sampling Strategy" << std::endl;
-	int nNodes = 12000; // basic strategy
+    for (int i = 1; i< nNodes; ++i) {
+        Eigen::VectorXd sample = cell.NextRandomCfree();
+        rtree.insert(make_pair(MyWorm(sample), i));
+        boost::add_vertex(g);
+   
+        g[additionalNodes].q_ = sample;
+        ++additionalNodes;
+   
+        rtree.query(boost::geometry::index::nearest(MyWorm(g[i].q_), 1), std::back_inserter(result));
 
-	// NextRandomCfree Sampling Strategy
-	for (int i = 0; i<nNodes; ++i) {
-		Eigen::VectorXd sample = cell.NextRandomCfree();
-		rtree.insert(make_pair(MyWorm(sample), i));
-		boost::add_vertex(g);
-		g[i].q_ = sample;
-	}
-#endif
-#endif
-	
-	std::cout << "Number Of Nodes: " << nNodes << std::endl;
+       
+        boost::graph_traits<graph_t>::vertex_descriptor tmp_v = boost::vertex(result.back().second,g);
 
-    // 2. step: building edges for the graph, if the connection of 2 nodes are in free space
-    cout << "2. Step: buildung edges for the graph" << endl;
-	std::vector<std::pair<MyWorm, int>> result;
-	unsigned int numberEdges = 0;
-	for (int i = 0; i < nNodes; ++i) {
-		rtree.query(boost::geometry::index::nearest(MyWorm(g[i].q_), number_of_nearest_neighbour), std::back_inserter(result));
-		for each (std::pair<MyWorm, int> worm in result)
-		{
-			if (testConnection(worm.first.q(), g[i].q_, cell))
-			{
-				boost::add_edge(i, worm.second, g);
-				numberEdges++;
-			}
-		}
-		result.clear();
-	}
-	std::cout << "Number Of Edges: " << numberEdges << std::endl;
+        double min_dist = std::numeric_limits<double>::infinity();
+        Eigen::VectorXd nearest_A;
+        Eigen::VectorXd nearest_B;
+        int index_source = -1;
+        int index_target = -1;
+        boost::graph_traits < graph_t >::out_edge_iterator ei, ei_end;
+        for (boost::tie(ei, ei_end) = out_edges(tmp_v, g); ei != ei_end; ++ei) {
+            auto source = boost::source(*ei, g);
+            auto target = boost::target(*ei, g);
+            Eigen::VectorXd A = g[source].q_;
+            Eigen::VectorXd B = g[target].q_;
 
-    // 3. Step: connecting start configuration to graph
-    cout << "3. Step: connecting start configuration to graph" << endl;
-	result.clear();
-	boost::add_vertex(g);
-	g[nNodes].q_ = qStart;
-	rtree.query(boost::geometry::index::nearest(MyWorm(qStart), 100), std::back_inserter(result));
-	int bFoundEdge = 0;
-	for each (std::pair<MyWorm, int> worm in result)
-	{
-		if (testConnection(worm.first.q(), qStart, cell))
-		{
-			boost::add_edge(nNodes, worm.second, g);
-			bFoundEdge++;
-			if (bFoundEdge > number_of_nearest_neighbour) break;
-		}
-	}
-	result.clear();
-	if (bFoundEdge == 0)
-	{
-		std::cout << "Failure: Could not connect Start Configuration" << std::endl;
-		return EXIT_FAILURE;
-	}
+            point_type p(sample[0], sample[1]);
+            point_type A_tmp(A[0], A[1]);
+            point_type B_tmp(B[0], B[1]);
+            segment_type s(A_tmp, B_tmp);
+            double dist = boost::geometry::distance(p, s);
 
-    // 4. Step: connecting goal configuration to graph
-    cout << "4. Step: connecting goal configuration to graph" << endl;
-	result.clear();
-	boost::add_vertex(g);
-	g[nNodes + 1].q_ = qGoal;
-	rtree.query(boost::geometry::index::nearest(MyWorm(qGoal), 100), std::back_inserter(result));
-	bFoundEdge = 0;
-	for each (std::pair<MyWorm, int> worm in result)
-	{
-		if (testConnection(worm.first.q(), qGoal, cell))
-		{
-			boost::add_edge(nNodes + 1, worm.second, g);
-			bFoundEdge++;
-			if (bFoundEdge > number_of_nearest_neighbour) break;
-		}
-	}
-	result.clear();
-	if (bFoundEdge == 0)
-	{
-		std::cout << "Failure: Could not connect Goal Configuration" << std::endl;
-		return EXIT_FAILURE;
-	}
-	
-    // 5. Step: searching for shortest path
-    cout << "5. Step: searching for shortest path" << endl;
+            if (dist < min_dist){
+                min_dist = dist;
+                nearest_A = A;
+                nearest_B = B;
+                index_source = source;
+                index_target = target;
+            }
+            // std::cout << "There is an edge from " << source << " to " << target << std::endl;
+        }
 
-	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_descriptor;
-	vertex_descriptor start = boost::vertex(nNodes, g);
-	std::vector<vertex_descriptor> p(num_vertices(g));
-	boost::dijkstra_shortest_paths(g, start, boost::predecessor_map(boost::make_iterator_property_map(p.begin(), get(boost::vertex_index, g))));
 
-	// Write the path: reverse search through predecessor map
-	int currentVertex = nNodes + 1; // end point
-	while ((currentVertex != nNodes)) // start point
-	{
-		path.push_back(g[currentVertex].q_);
-		currentVertex = p[currentVertex];
+       
+        double t = GetClosestPoint(nearest_A, nearest_B, sample);
+        if (t < 0.0f){
+            boost::add_edge(index_source, additionalNodes - 1, g);
+        }
+        else {
+            Eigen::VectorXd projected_point = nearest_A + (nearest_B - nearest_A) * t;
+            boost::add_vertex(g);
+            rtree.insert(make_pair(MyWorm(projected_point), additionalNodes));
+            g[additionalNodes].q_ = sample;
+            boost::remove_edge(index_source, index_target, g);
+            boost::add_edge(additionalNodes, index_source, g);
+            boost::add_edge(additionalNodes, index_target, g);
+            boost::add_edge(additionalNodes, additionalNodes - 1, g);
 
-		if (path.size() > nNodes)
-		{
-			std::cout << "Failure: Could not find a path from start to goal!";
-			return EXIT_FAILURE;
-		}
-	}
-	path.push_back(g[currentVertex].q_);
+            ++additionalNodes;
+        }
 
-	std::cout << "Path size: " << path.size() << std::endl;
-	std::cout << "Path Refinement:" << std::endl;
 
-	// Path Refinement
-	// Go through path
-	reverse(path.begin(), path.end());
-	for (unsigned int current = 0; current < path.size(); current++)
-	{
-		// Find last successor
-		int lastSuccessor = current + 1;
-		for (unsigned int successor = current + 2; successor < path.size(); successor++)
-		{
-			if (testConnection(path[current], path[successor], cell))
-				lastSuccessor = successor;
-		}
-		if (lastSuccessor != current + 1)
-			path.erase(path.begin() + current + 1, path.begin() + lastSuccessor);
-	}
-	reverse(path.begin(), path.end());
-	
-	std::cout << "Path size: " << path.size() << std::endl;
 
-	auto end_time = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> diff = end_time - start_time;
+        result.clear();
+    }
 
-	std::cout << "Time to find a path of size " << path.size() << " for " << nNodes << " nodes and " << numberEdges << " edges: " << diff.count() << " s\n";
-
-	std::vector<int> component(boost::num_vertices(g));
-	int num = boost::connected_components(g, &component[0]);
-	std::cout << "Number of connected Components: " << num << std::endl;
-	std::cout << "Number of Nearest Neighbours: " << number_of_nearest_neighbour << std::endl;
-
-	write_gnuplot_file(g, "VisibilityGraph.dat");
-	write_easyrob_program_file(path, "prm.prg");
-	
     return EXIT_SUCCESS;
 }
