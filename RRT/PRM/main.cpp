@@ -31,7 +31,7 @@ double GetClosestPoint(Eigen::VectorXd A, Eigen::VectorXd B, Eigen::VectorXd P)
 int _tmain(int argc, _TCHAR* argv[])
 {
     WormCell cell;
-    Eigen::VectorXd qStart(2), qGoal(5), q(5);
+    Eigen::VectorXd qStart(5), qGoal(5), q(5);
     vector<Eigen::VectorXd> path; // create a point vector for storing the path
     graph_t g;
     knn_rtree_t rtree;
@@ -40,11 +40,12 @@ int _tmain(int argc, _TCHAR* argv[])
 #define TEST_CASE 0
 #ifdef TEST_CASE
 #if TEST_CASE == 0
+	
     // Example
     cout << "Example" << endl;
-    qStart << 0.5, 0.5, 0., 0., 0.;
+	qStart << 0.5, 0.5, 0., 0., 0.;
     qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
-
+	/*
     Eigen::VectorXd segment(qGoal - qStart), delta(5);
     delta = segment.normalized() * stepsize;
     int steps = int(segment.norm() / stepsize);
@@ -71,6 +72,7 @@ int _tmain(int argc, _TCHAR* argv[])
     write_easyrob_program_file(path, "example.prg", false);
     path.clear();
     // !Example
+	*/
 #elif TEST_CASE == 1
     cout << "Test case 1" << endl;
     qStart << .6, .1, 0., 0., 0.;
@@ -114,26 +116,28 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 
-    const int nNodes = 25000;
-    int additionalNodes = 1;
+    const int nNodes = 100;
+    int additionalNodes = 0;
     // 1. step: building up a graph g consisting of nNodes vertices
     cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
 
     std::vector<std::pair<MyWorm, int>> result;
-
     rtree.insert(make_pair(MyWorm(qStart), 0));
     boost::add_vertex(g);
     g[0].q_ = qStart;
 
     for (int i = 1; i< nNodes; ++i) {
         Eigen::VectorXd sample = cell.NextRandomCfree();
-        rtree.insert(make_pair(MyWorm(sample), i));
+		sample[2] = 0.0;
+		sample[3] = 0.0;
+		sample[4] = 0.0;
+
+		++additionalNodes;
+		rtree.insert(make_pair(MyWorm(sample), additionalNodes));
         boost::add_vertex(g);
-   
         g[additionalNodes].q_ = sample;
-        ++additionalNodes;
    
-        rtree.query(boost::geometry::index::nearest(MyWorm(g[i].q_), 1), std::back_inserter(result));
+		rtree.query(boost::geometry::index::nearest(MyWorm(g[additionalNodes].q_), 1), std::back_inserter(result));
 
        
         boost::graph_traits<graph_t>::vertex_descriptor tmp_v = boost::vertex(result.back().second,g);
@@ -163,32 +167,37 @@ int _tmain(int argc, _TCHAR* argv[])
                 index_source = source;
                 index_target = target;
             }
-            // std::cout << "There is an edge from " << source << " to " << target << std::endl;
         }
 
+		if (index_source == -1)
+		{
+			boost::add_edge(additionalNodes, additionalNodes - 1, g);
+		}
+		else
+		{
+			double t = GetClosestPoint(nearest_A, nearest_B, sample);
+			if (t < 0.0f){
+				boost::add_edge(index_source, additionalNodes - 1, g);
+			}
+			else {
+				Eigen::VectorXd projected_point = nearest_A + (nearest_B - nearest_A) * t;
 
-       
-        double t = GetClosestPoint(nearest_A, nearest_B, sample);
-        if (t < 0.0f){
-            boost::add_edge(index_source, additionalNodes - 1, g);
-        }
-        else {
-            Eigen::VectorXd projected_point = nearest_A + (nearest_B - nearest_A) * t;
-            boost::add_vertex(g);
-            rtree.insert(make_pair(MyWorm(projected_point), additionalNodes));
-            g[additionalNodes].q_ = sample;
-            boost::remove_edge(index_source, index_target, g);
-            boost::add_edge(additionalNodes, index_source, g);
-            boost::add_edge(additionalNodes, index_target, g);
-            boost::add_edge(additionalNodes, additionalNodes - 1, g);
+				++additionalNodes;
+				boost::add_vertex(g);
+				rtree.insert(make_pair(MyWorm(projected_point), additionalNodes));
+				g[additionalNodes].q_ = sample;
 
-            ++additionalNodes;
-        }
-
-
+				boost::remove_edge(index_source, index_target, g);
+				boost::add_edge(additionalNodes, index_source, g);
+				boost::add_edge(additionalNodes, index_target, g);
+				boost::add_edge(additionalNodes, additionalNodes - 1, g);
+			}
+		}
 
         result.clear();
     }
+	std::cout << "Number of Nodes: " << additionalNodes + 1 << std::endl;
+	write_gnuplot_file(g, "VisibilityGraph.dat");
 
     return EXIT_SUCCESS;
 }
