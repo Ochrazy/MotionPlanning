@@ -127,17 +127,17 @@ int _tmain(int argc, _TCHAR* argv[])
     g[0].q_ = qStart;
 
     for (int i = 1; i< nNodes; ++i) {
-        Eigen::VectorXd sample = cell.NextRandomCfree();
+		Eigen::VectorXd sample = cell.NextRandomCspace();
 		sample[2] = 0.0;
 		sample[3] = 0.0;
 		sample[4] = 0.0;
 
 		++additionalNodes;
-		rtree.insert(make_pair(MyWorm(sample), additionalNodes));
+		int currentSampleIndex = additionalNodes;
         boost::add_vertex(g);
-        g[additionalNodes].q_ = sample;
-   
-		rtree.query(boost::geometry::index::nearest(MyWorm(g[additionalNodes].q_), 1), std::back_inserter(result));
+		g[currentSampleIndex].q_ = sample;
+		rtree.query(boost::geometry::index::nearest(MyWorm(g[currentSampleIndex].q_), 1), std::back_inserter(result));
+		rtree.insert(make_pair(MyWorm(sample), currentSampleIndex));
 
        
         boost::graph_traits<graph_t>::vertex_descriptor tmp_v = boost::vertex(result.back().second,g);
@@ -147,6 +147,7 @@ int _tmain(int argc, _TCHAR* argv[])
         Eigen::VectorXd nearest_B;
         int index_source = -1;
         int index_target = -1;
+
         boost::graph_traits < graph_t >::out_edge_iterator ei, ei_end;
         for (boost::tie(ei, ei_end) = out_edges(tmp_v, g); ei != ei_end; ++ei) {
             auto source = boost::source(*ei, g);
@@ -171,26 +172,27 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (index_source == -1)
 		{
-			boost::add_edge(additionalNodes, additionalNodes - 1, g);
+			boost::add_edge(currentSampleIndex, result.back().second, g);
 		}
 		else
 		{
 			double t = GetClosestPoint(nearest_A, nearest_B, sample);
 			if (t < 0.0f){
-				boost::add_edge(index_source, additionalNodes - 1, g);
+				boost::add_edge(currentSampleIndex, index_source, g);
 			}
 			else {
 				Eigen::VectorXd projected_point = nearest_A + (nearest_B - nearest_A) * t;
 
 				++additionalNodes;
+				int splitNodeIndex = additionalNodes;
 				boost::add_vertex(g);
-				rtree.insert(make_pair(MyWorm(projected_point), additionalNodes));
-				g[additionalNodes].q_ = sample;
+				rtree.insert(make_pair(MyWorm(projected_point), splitNodeIndex));
+				g[splitNodeIndex].q_ = projected_point;
 
 				boost::remove_edge(index_source, index_target, g);
-				boost::add_edge(additionalNodes, index_source, g);
-				boost::add_edge(additionalNodes, index_target, g);
-				boost::add_edge(additionalNodes, additionalNodes - 1, g);
+				boost::add_edge(splitNodeIndex, index_source, g);
+				boost::add_edge(splitNodeIndex, index_target, g);
+				boost::add_edge(splitNodeIndex, currentSampleIndex, g);
 			}
 		}
 
