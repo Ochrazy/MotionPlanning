@@ -57,6 +57,15 @@ void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtre
 	rtreeEdge.insert(make_pair(edge, boost::edge(firstIndex, secondIndex, g).first));
 }
 
+// Add node and return index
+int addNode(Eigen::VectorXd node, graph_t g)
+{
+	int index = boost::num_vertices(g);
+	boost::add_vertex(g);
+	g[index].q_ = node;
+	return index;
+}
+
 
 /***********************************************************************************************************************************/
 int _tmain(int argc, _TCHAR* argv[])
@@ -150,13 +159,10 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 
 	const int nNodes = 4000;
-	int additionalNodes = 0;
-	// 1. step: building up a graph g consisting of nNodes vertices
-	cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
+	cout << "RRT" << endl;
 
 	std::vector<std::pair<segment_5d, edge_t>> resultEdge;
-	boost::add_vertex(g);
-	g[0].q_ = qStart;
+	addNode(qStart, g);
 
 	for (int i = 1; i < nNodes; ++i) {
 		//// First Task
@@ -173,10 +179,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			bool hitObs = cell.FirstContact(qs, cObstacle, qStart, qrand, stepsize);
 			if (qs != qStart)
 			{
-				++additionalNodes;
-				boost::add_vertex(g);
-				g[1].q_ = qs;
-				addEdge(0, 1, g, rtreeEdge);
+				// Add first edge and node
+				addEdge(0, addNode(qs, g), g, rtreeEdge);
 			}
 			continue;
 		}
@@ -208,42 +212,26 @@ int _tmain(int argc, _TCHAR* argv[])
 		// Check if we can reach goal
 		if (sample == qGoal && cell.CheckMotion(qn, qGoal, stepsize))
 		{
-			// Add Sample (qn) Node
-			++additionalNodes;
-			int currentSampleIndex = additionalNodes;
-			boost::add_vertex(g);
-			g[currentSampleIndex].q_ = qn;
-
-			// Add goal Node
-			++additionalNodes;
-			boost::add_vertex(g);
-			g[additionalNodes].q_ = qGoal;
-			boost::add_edge(additionalNodes, currentSampleIndex, g);
+			// Add Goal to tree
+			boost::add_edge(addNode(qn, g), addNode(qGoal, g), g);
+			// Success
 			break;
 		}
 		// New sample
 		else if (qs != qn)
 		{
 			// Add Sample (qs) Node
-			++additionalNodes;
-			int currentSampleIndex = additionalNodes;
-			boost::add_vertex(g);
-			g[currentSampleIndex].q_ = qs;
+			int currentSampleIndex = addNode(qs, g);
 
 			// Add Edges
-			if (t < 0.0f) {
+			if (t < 0.0f) 
 				addEdge(currentSampleIndex, index_source, g, rtreeEdge);
-			}
-			else if (t > 1.0f){
+			else if (t > 1.0f)
 				addEdge(currentSampleIndex, index_target, g, rtreeEdge);
-			}
 			else
 			{
 				// Add Split Node (qn)
-				++additionalNodes;
-				int splitNodeIndex = additionalNodes;
-				boost::add_vertex(g);
-				g[splitNodeIndex].q_ = qn;
+				int splitNodeIndex = addNode(qn, g);
 
 				// Remove and add edges
 				boost::remove_edge(index_source, index_target, g);
@@ -258,7 +246,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		resultEdge.clear();
 	}
-	std::cout << "Number of Nodes: " << additionalNodes + 1 << std::endl;
+	std::cout << "Number of Nodes: " << boost::num_vertices(g) << std::endl;
 	write_gnuplot_file(g, "VisibilityGraph.dat");
 
 	return EXIT_SUCCESS;
