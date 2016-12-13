@@ -48,15 +48,6 @@ double GetClosestPoint(Eigen::VectorXd A, Eigen::VectorXd B, Eigen::VectorXd P)
 	return t;
 }
 
-void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtreeEdge)
-{
-	// To graph
-	boost::add_edge(firstIndex, secondIndex, g);
-	// To R-Tree
-	segment_5d edge(convertEigenToPoint(g[firstIndex].q_), convertEigenToPoint(g[secondIndex].q_));
-	rtreeEdge.insert(make_pair(edge, boost::edge(firstIndex, secondIndex, g).first));
-}
-
 
 /***********************************************************************************************************************************/
 int _tmain(int argc, _TCHAR* argv[])
@@ -65,6 +56,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	Eigen::VectorXd qStart(5), qGoal(5), q(5);
 	vector<Eigen::VectorXd> path; // create a point vector for storing the path
 	graph_t g;
+	knn_rtree_t rtree;
 	knn_rtree_edge_t rtreeEdge;
 	const float stepsize = .025f;
 
@@ -75,8 +67,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Example
 	//cout << "Example" << endl;
 	//qStart << 0.5, 0.5, 0., 0., 0.;
-	qStart << -.2, -.2, 0., 0., 0.;
-	 //qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
+	qStart << .0, .0, 0., 0., 0.;
+	// qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
 	qGoal << .5, .46, DEG2RAD(-180.f), 0., 0.;
 	/*
 	Eigen::VectorXd segment(qGoal - qStart), delta(5);
@@ -149,114 +141,118 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 
-	const int nNodes = 4000;
+	const int nNodes = 250;
 	int additionalNodes = 0;
 	// 1. step: building up a graph g consisting of nNodes vertices
 	cout << "1. Step: building " << nNodes << " nodes for the graph" << endl;
 
+	std::vector<std::pair<MyWorm, int>> result;
 	std::vector<std::pair<segment_5d, edge_t>> resultEdge;
+	rtree.insert(make_pair(MyWorm(qStart), 0));
 	boost::add_vertex(g);
 	g[0].q_ = qStart;
 
 	for (int i = 1; i < nNodes; ++i) {
-		//// First Task
-		//Eigen::VectorXd sample = cell.NextRandomCspace();
-		//sample[2] = 0.0;
-		//sample[3] = 0.0;
-		//sample[4] = 0.0;
+		// First Task
+		Eigen::VectorXd sample = cell.NextRandomCspace();
+		sample[2] = 0.0;
+		sample[3] = 0.0;
+		sample[4] = 0.0;
 
-		// Add first edge
-		if (boost::num_edges(g) == 0)
+		/*
+		// Second Task
+		Eigen::VectorXd sample = cell.NextRandomCspace();
+		if ((i % (int)(nNodes / 5) == 0) || i == 1)
+		sample = qGoal;
+
+		// Stopping Configuration
+		Eigen::VectorXd Cfree, cObstacle, qn, alpha;
+		rtree.query(boost::geometry::index::nearest(MyWorm(sample), 1), std::back_inserter(result));
+		qn = result.back().first.q();
+		alpha = sample;
+		bool hitObs = cell.FirstContact(Cfree, cObstacle, qn, alpha, stepsize);
+
+		// Check if we can reach goal
+		if (qGoal == sample && cell.CheckMotion(qn, qGoal, stepsize))
 		{
-			// Calculate qs
-			Eigen::VectorXd qs, cObstacle, qn, qrand = cell.NextRandomCspace();
-			bool hitObs = cell.FirstContact(qs, cObstacle, qStart, qrand, stepsize);
-			if (qs != qStart)
-			{
-				++additionalNodes;
-				boost::add_vertex(g);
-				g[1].q_ = qs;
-				addEdge(0, 1, g, rtreeEdge);
-			}
+		++additionalNodes;
+		boost::add_vertex(g);
+		g[additionalNodes].q_ = qGoal;
+		boost::add_edge(additionalNodes, result.back().second, g);
+		break;
+		}
+		// No new sample
+		else if (qn == Cfree)
+		{
+		result.clear();
+		continue;
+		}
+		else // New Sample
+		sample = Cfree;
+		*/
+		++additionalNodes;
+		int currentSampleIndex = additionalNodes;
+		boost::add_vertex(g);
+		g[currentSampleIndex].q_ = sample;
+		rtree.query(boost::geometry::index::nearest(MyWorm(g[currentSampleIndex].q_), 1), std::back_inserter(result));
+		rtree.insert(make_pair(MyWorm(sample), currentSampleIndex));
+
+		if (i == 1)
+		{
+			boost::add_edge(0, 1, g);
+			point_5d A_tmp = convertEigenToPoint(g[0].q_);
+			point_5d B_tmp = convertEigenToPoint(g[1].q_);
+			segment_5d edge(A_tmp, B_tmp);
+			rtreeEdge.insert(make_pair(edge, boost::edge(0, 1, g).first));
 			continue;
 		}
 
-		// Try to connect to goal (20%)
-		Eigen::VectorXd sample = cell.NextRandomCspace();
-		if ((i % (int)(nNodes / 20) == 0))
-			sample = qGoal;
-
-		// Stopping Configuration
-		Eigen::VectorXd qs, cObstacle, qn, qrand = sample;
-
-		// Find closest Edge to qrand
-		rtreeEdge.query(boost::geometry::index::nearest(MyWorm(qrand), 1), std::back_inserter(resultEdge));
+		// Find closest Edge
+		rtreeEdge.query(boost::geometry::index::nearest(MyWorm(g[currentSampleIndex].q_), 1), std::back_inserter(resultEdge));
 		Eigen::VectorXd nearest_A = convertPointToEigen(resultEdge.back().first.first);
 		Eigen::VectorXd nearest_B = convertPointToEigen(resultEdge.back().first.second);
 		int index_source = resultEdge.back().second.m_source;
 		int index_target = resultEdge.back().second.m_target;
 
-		// Calculate qn
+		// Add Edges
 		double t = GetClosestPoint(nearest_A, nearest_B, sample);
-		if (t < 0.0) qn = nearest_A;
-		else if (t > 1.0) qn = nearest_B;
-		else  qn = nearest_A + (nearest_B - nearest_A) * t;
-
-		// Calculate qs
-		bool hitObs = cell.FirstContact(qs, cObstacle, qn, qrand, stepsize);
-
-		// Check if we can reach goal
-		if (sample == qGoal && cell.CheckMotion(qn, qGoal, stepsize))
-		{
-			// Add Sample (qn) Node
-			++additionalNodes;
-			int currentSampleIndex = additionalNodes;
-			boost::add_vertex(g);
-			g[currentSampleIndex].q_ = qn;
-
-			// Add goal Node
-			++additionalNodes;
-			boost::add_vertex(g);
-			g[additionalNodes].q_ = qGoal;
-			boost::add_edge(additionalNodes, currentSampleIndex, g);
-			break;
+		Eigen::VectorXd projected_point = nearest_A + (nearest_B - nearest_A) * t;
+		if (t < 0.0f) {// && !cell.CheckMotion(nearest_A, sample)){
+			boost::add_edge(currentSampleIndex, index_source, g);
+			segment_5d edge(convertEigenToPoint(g[currentSampleIndex].q_), convertEigenToPoint(g[index_source].q_));
+			rtreeEdge.insert(make_pair(edge, boost::edge(currentSampleIndex, index_source, g).first));
 		}
-		// New sample
-		else if (qs != qn)
-		{
-			// Add Sample (qs) Node
-			++additionalNodes;
-			int currentSampleIndex = additionalNodes;
-			boost::add_vertex(g);
-			g[currentSampleIndex].q_ = qs;
-
-			// Add Edges
-			if (t < 0.0f) {
-				addEdge(currentSampleIndex, index_source, g, rtreeEdge);
-			}
-			else if (t > 1.0f){
-				addEdge(currentSampleIndex, index_target, g, rtreeEdge);
-			}
-			else
-			{
-				// Add Split Node (qn)
-				++additionalNodes;
-				int splitNodeIndex = additionalNodes;
-				boost::add_vertex(g);
-				g[splitNodeIndex].q_ = qn;
-
-				// Remove and add edges
-				boost::remove_edge(index_source, index_target, g);
-				rtreeEdge.remove(resultEdge.back());
-				addEdge(splitNodeIndex, index_source, g, rtreeEdge);
-				addEdge(splitNodeIndex, index_target, g, rtreeEdge);
-				addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
-			}
+		else if (t > 1.0f){
+			boost::add_edge(currentSampleIndex, index_target, g);
+			segment_5d edge(convertEigenToPoint(g[currentSampleIndex].q_), convertEigenToPoint(g[index_target].q_));
+			rtreeEdge.insert(make_pair(edge, boost::edge(currentSampleIndex, index_target, g).first));
 		}
-		// No new Sample
-		else resultEdge.clear();
+		else
+		{
+			++additionalNodes;
+			int splitNodeIndex = additionalNodes;
+			boost::add_vertex(g);
+			rtree.insert(make_pair(MyWorm(projected_point), splitNodeIndex));
+			g[splitNodeIndex].q_ = projected_point;
 
-		resultEdge.clear();
+			boost::remove_edge(index_source, index_target, g);
+			rtreeEdge.remove(resultEdge.back());
+
+			boost::add_edge(splitNodeIndex, index_source, g);
+			segment_5d edge(convertEigenToPoint(g[splitNodeIndex].q_), convertEigenToPoint(g[index_source].q_));
+			rtreeEdge.insert(make_pair(edge, boost::edge(splitNodeIndex, index_source, g).first));
+
+			boost::add_edge(splitNodeIndex, index_target, g);
+			edge = segment_5d(convertEigenToPoint(g[splitNodeIndex].q_), convertEigenToPoint(g[index_target].q_));
+			rtreeEdge.insert(make_pair(edge, boost::edge(splitNodeIndex, index_target, g).first));
+
+			boost::add_edge(splitNodeIndex, currentSampleIndex, g);
+			edge = segment_5d(convertEigenToPoint(g[splitNodeIndex].q_), convertEigenToPoint(g[currentSampleIndex].q_));
+			rtreeEdge.insert(make_pair(edge, boost::edge(splitNodeIndex, currentSampleIndex, g).first));
+		}
+
+
+		result.clear();
 	}
 	std::cout << "Number of Nodes: " << additionalNodes + 1 << std::endl;
 	write_gnuplot_file(g, "VisibilityGraph.dat");
