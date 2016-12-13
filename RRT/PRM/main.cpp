@@ -58,7 +58,7 @@ void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtre
 }
 
 // Add node and return index
-int addNode(Eigen::VectorXd node, graph_t g)
+int addNode(Eigen::VectorXd node, graph_t& g)
 {
 	int index = boost::num_vertices(g);
 	boost::add_vertex(g);
@@ -77,7 +77,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	knn_rtree_edge_t rtreeEdge;
 	const float stepsize = .025f;
 
-#define TEST_CASE 0
+#define TEST_CASE 6
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 
@@ -86,7 +86,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//qStart << 0.5, 0.5, 0., 0., 0.;
 	qStart << -.2, -.2, 0., 0., 0.;
 	 //qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
-	qGoal << .5, .46, DEG2RAD(-180.f), 0., 0.;
+	//qGoal << .5, .46, DEG2RAD(-180.f), 0., 0.;
+	qGoal << -.2, -.25, DEG2RAD(-180.f), 0., 0.;
 	/*
 	Eigen::VectorXd segment(qGoal - qStart), delta(5);
 	delta = segment.normalized() * stepsize;
@@ -158,11 +159,13 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 
-	const int nNodes = 4000;
-	cout << "RRT" << endl;
+	const int nNodes = 150000;
+	cout << "RRT with number of Nodes:" << nNodes << endl;
 
 	std::vector<std::pair<segment_5d, edge_t>> resultEdge;
+	// Add Start and Goal nodes
 	addNode(qStart, g);
+	addNode(qGoal, g);
 
 	for (int i = 1; i < nNodes; ++i) {
 		//// First Task
@@ -194,7 +197,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		Eigen::VectorXd qs, cObstacle, qn, qrand = sample;
 
 		// Find closest Edge to qrand
-		rtreeEdge.query(boost::geometry::index::nearest(MyWorm(qrand), 1), std::back_inserter(resultEdge));
+		rtreeEdge.query(boost::geometry::index::nearest(convertEigenToPoint(qrand), 1), std::back_inserter(resultEdge));
 		Eigen::VectorXd nearest_A = convertPointToEigen(resultEdge.back().first.first);
 		Eigen::VectorXd nearest_B = convertPointToEigen(resultEdge.back().first.second);
 		int index_source = resultEdge.back().second.m_source;
@@ -213,8 +216,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (sample == qGoal && cell.CheckMotion(qn, qGoal, stepsize))
 		{
 			// Add Goal to tree
-			boost::add_edge(addNode(qn, g), addNode(qGoal, g), g);
+			boost::add_edge(addNode(qn, g), 1, g);
 			// Success
+			std::cout << "Success: Connected Goal!" << std::endl;
 			break;
 		}
 		// New sample
