@@ -14,11 +14,6 @@ namespace bgi = boost::geometry::index;
 typedef boost::geometry::model::d2::point_xy<double> point_type;
 typedef boost::geometry::model::segment<point_type> segment_type;
 
-typedef bg::model::point<double, 5, bg::cs::cartesian> point_5d;
-typedef boost::geometry::model::segment<point_5d> segment_5d;
-typedef std::pair<segment_5d, edge_t> rtree_value_edge5d;
-typedef boost::geometry::index::rtree<rtree_value_edge5d, boost::geometry::index::quadratic<16>> knn_rtree_edge5d_t;
-
 typedef std::pair<segment_type, edge_t> rtree_value_edge;
 typedef boost::geometry::index::rtree<rtree_value_edge, boost::geometry::index::quadratic<16>> knn_rtree_edge_t;
 
@@ -27,17 +22,6 @@ point_type convertEigenTo2DPoint(Eigen::VectorXd inPoint)
 	point_type point;
 	point.set<0>(inPoint[0]);
 	point.set<1>(inPoint[1]);
-	return point;
-}
-
-point_5d convertEigenToPoint(Eigen::VectorXd inPoint)
-{
-	point_5d point;
-	point.set<0>(inPoint[0]);
-	point.set<1>(inPoint[1]);
-	point.set<2>(inPoint[2]);
-	point.set<3>(inPoint[3]);
-	point.set<4>(inPoint[4]);
 	return point;
 }
 
@@ -55,35 +39,12 @@ double GetClosestPoint(point_type A, point_type B, point_type P)
 	return t;
 }
 
-double GetClosestPoint(point_5d A, point_5d B, point_5d P)
-{
-	point_5d AP = P;
-	boost::geometry::subtract_point(AP, A);
-	point_5d AB = B;
-	boost::geometry::subtract_point(AB, A);
-
-	double ab2 = AB.get<0>() * AB.get<0>() + AB.get<1>() * AB.get<1>();
-	double ap_ab = AP.get<0>() * AB.get<0>() + AP.get<1>() * AB.get<1>();
-	double t = ap_ab / ab2;
-
-	return t;
-}
-
 void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtreeEdge)
 {
 	// To graph
 	boost::add_edge(firstIndex, secondIndex, g);
 	// To R-Tree
 	segment_type edge(convertEigenTo2DPoint(g[firstIndex].q_), convertEigenTo2DPoint(g[secondIndex].q_));
-	rtreeEdge.insert(make_pair(edge, boost::edge(firstIndex, secondIndex, g).first));
-}
-
-void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge5d_t& rtreeEdge)
-{
-	// To graph
-	boost::add_edge(firstIndex, secondIndex, g);
-	// To R-Tree
-	segment_5d edge(convertEigenToPoint(g[firstIndex].q_), convertEigenToPoint(g[secondIndex].q_));
 	rtreeEdge.insert(make_pair(edge, boost::edge(firstIndex, secondIndex, g).first));
 }
 
@@ -111,21 +72,6 @@ int addSplitNode(Eigen::VectorXd splitNode, int source, int target, graph_t& g, 
 	return splitNodeIndex;
 }
 
-int addSplitNode(Eigen::VectorXd splitNode, int source, int target, graph_t& g, knn_rtree_edge5d_t& rtreeEdge)
-{
-	// Add Split Node (qn)
-	int splitNodeIndex = addNode(splitNode, g);
-
-	// Remove and add edges
-	boost::remove_edge(source, target, g);
-	segment_5d edgeSegment(convertEigenToPoint(g[source].q_), convertEigenToPoint(g[target].q_));
-	rtreeEdge.remove(make_pair(edgeSegment, boost::edge(source, target, g).first));
-	addEdge(splitNodeIndex, source, g, rtreeEdge);
-	addEdge(splitNodeIndex, target, g, rtreeEdge);
-
-	return splitNodeIndex;
-}
-
 struct NearestEdgeQN
 {
 	int index_source;
@@ -138,25 +84,6 @@ NearestEdgeQN calculateQNearest(point_type qrand, knn_rtree_edge_t& rtreeEdge, g
 {
 	// Find closest Edge to qrand
 	std::vector<std::pair<segment_type, edge_t>> resultEdge;
-	rtreeEdge.query(boost::geometry::index::nearest(qrand, 1), std::back_inserter(resultEdge));
-	int index_source = resultEdge.back().second.m_source;
-	int index_target = resultEdge.back().second.m_target;
-
-	// Calculate qn
-	Eigen::VectorXd qn;
-	double t = GetClosestPoint(resultEdge.back().first.first, resultEdge.back().first.second, qrand);
-	if (t < 0.0) qn = g[index_source].q_;
-	else if (t > 1.0) qn = g[index_target].q_;
-	else  qn = g[index_source].q_ + (g[index_target].q_ - g[index_source].q_) * t;
-
-	NearestEdgeQN result = { index_source , index_target, t, qn };
-	return result;
-}
-
-NearestEdgeQN calculateQNearest(point_5d qrand, knn_rtree_edge5d_t& rtreeEdge, graph_t& g)
-{
-	// Find closest Edge to qrand
-	std::vector<std::pair<segment_5d, edge_t>> resultEdge;
 	rtreeEdge.query(boost::geometry::index::nearest(qrand, 1), std::back_inserter(resultEdge));
 	int index_source = resultEdge.back().second.m_source;
 	int index_target = resultEdge.back().second.m_target;
@@ -226,6 +153,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	vector<Eigen::VectorXd> path; // create a point vector for storing the path
 	graph_t g;
 	graph_t gb;
+	int solutionIndex = -1;
 	const float stepsize = .025f;
 
 #define TEST_CASE 0
@@ -236,8 +164,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//cout << "Example" << endl;
 	//qStart << 0.5, 0.5, 0., 0., 0.;
 	qStart << -.17, -.17, 0., 0., 0.;
-	//qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
-	qGoal << .5, .46, DEG2RAD(-180.f), 0., 0.;
+	qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
+	//qGoal << .5, .46, DEG2RAD(-180.f), 0., 0.;
 	//qGoal << .17, -.17, 0, 0., 0.;
 	/*
 	Eigen::VectorXd segment(qGoal - qStart), delta(5);
@@ -535,13 +463,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 #elif TASK == 1
 // Second Task
-knn_rtree_edge5d_t rtreeEdge;
-const int nNodes = 100000;
+knn_rtree_edge_t rtreeEdge;
+const int nNodes = 150000;
 std::cout << "RRT with number of Nodes:" << nNodes << endl;
 
 // Add Start and Goal nodes
 addNode(qStart, g);
-addNode(qGoal, g);
 
 for (int i = 1; i < nNodes; ++i)
 {
@@ -568,10 +495,29 @@ for (int i = 1; i < nNodes; ++i)
 		Eigen::VectorXd qs, cObstacle, qrand = sample;
 
 		// Find closest Edge to qrand
-		NearestEdgeQN neqn = calculateQNearest(convertEigenToPoint(qrand), rtreeEdge, g);
+		NearestEdgeQN neqn = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdge, g);
 
 		// Calculate qs
 		bool hitObs = cell.FirstContact(qs, cObstacle, neqn.qn, qrand, stepsize);
+
+		if (cell.CheckMotion(qs, qGoal, stepsize))
+		{
+			std::cout << "Success";
+			int currentSampleIndex = addNode(qs, g);
+			if (neqn.t < 0.0f)
+				addEdge(neqn.index_source, currentSampleIndex, g, rtreeEdge);
+			else if (neqn.t > 1.0f)
+				addEdge(neqn.index_target, currentSampleIndex, g, rtreeEdge);
+			else
+			{
+				int splitNodeIndex = addSplitNode(neqn.qn, neqn.index_source, neqn.index_target, g, rtreeEdge);
+				addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
+			}
+
+			solutionIndex = addNode(qGoal, g);
+			addEdge(currentSampleIndex, solutionIndex, g, rtreeEdge);
+			break;
+		}
 
 		// New sample
 		if ((qs - neqn.qn).norm() > stepsize)  //qs != qn)
@@ -594,39 +540,22 @@ for (int i = 1; i < nNodes; ++i)
 	}
 }
 
-// Try to connect qGoal
-// Find closest Edge to qGoal
-std::vector<std::pair<segment_5d, edge_t>> resultEdge;
-rtreeEdge.query(boost::geometry::index::nearest(MyWorm(qGoal), 100), std::back_inserter(resultEdge));
-int bFoundEdge = 0;
-for each (std::pair<segment_5d, edge_t> edge in resultEdge)
-{
-	if (cell.CheckMotion(g[resultEdge.back().second.m_source].q_, qGoal, stepsize))
+#endif
+#endif
+
+	if (solutionIndex != -1)
 	{
-		addEdge(resultEdge.back().second.m_source, 1, g, rtreeEdge);
-		bFoundEdge++;
-		if (bFoundEdge > 10) break;
+		// Connect paths 
+		vector<Eigen::VectorXd> pathG = calculateShortestPath(g, 0, solutionIndex, cell);
+		std::cout << "Path size of G: " << pathG.size() << std::endl;
+
+		// Refine Path
+		refinePath(pathG, cell);
+		reverse(pathG.begin(), pathG.end());
+		std::cout << "Path size of Refined Graph: " << pathG.size() << std::endl;
+
+		write_easyrob_program_file(pathG, "rrt.prg");
 	}
-}
-
-if (bFoundEdge == 0)
-{
-	std::cout << "Could not connect Goal Configuration" << std::endl;
-}
-
-#endif
-#endif
-
-	// Connect paths 
-	vector<Eigen::VectorXd> pathG = calculateShortestPath(g, 0, 1, cell);
-	std::cout << "Path size of G: " << pathG.size() << std::endl;
-
-	// Refine Path
-	refinePath(pathG, cell);
-	reverse(pathG.begin(), pathG.end());
-	std::cout << "Path size of Refined Graph: " << pathG.size() << std::endl;
-
-	write_easyrob_program_file(pathG, "rrt.prg");
 
 	std::cout << "Number of Nodes in g: " << boost::num_vertices(g) << std::endl;
 	write_gnuplot_file(g, "VisibilityGraph.dat");
