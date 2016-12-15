@@ -31,7 +31,7 @@ double GetClosestPoint(point_type A, point_type B, point_type P)
 	boost::geometry::subtract_point(AP, A);
 	point_type AB = B;
 	boost::geometry::subtract_point(AB, A);
-	
+
 	double ab2 = AB.x() * AB.x() + AB.y() * AB.y();
 	double ap_ab = AP.x() * AB.x() + AP.y() * AB.y();
 	double t = ap_ab / ab2;
@@ -95,7 +95,7 @@ NearestEdgeQN calculateQNearest(point_type qrand, knn_rtree_edge_t& rtreeEdge, g
 	else if (t > 1.0) qn = g[index_target].q_;
 	else  qn = g[index_source].q_ + (g[index_target].q_ - g[index_source].q_) * t;
 
-	NearestEdgeQN result = { index_source , index_target, t, qn };
+	NearestEdgeQN result = { index_source, index_target, t, qn };
 	return result;
 }
 
@@ -154,47 +154,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	graph_t g;
 	graph_t gb;
 	int solutionIndex = -1;
+	int solutionIndexB = -1;
 	const float stepsize = .025f;
 
-#define TEST_CASE 0
+#define TEST_CASE 1
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 
-	// Example
-	//cout << "Example" << endl;
 	//qStart << 0.5, 0.5, 0., 0., 0.;
 	qStart << -.17, -.17, 0., 0., 0.;
 	qGoal << .6, .9, DEG2RAD(-90.), DEG2RAD(-180.), DEG2RAD(180.);
 	//qGoal << .5, .46, DEG2RAD(-180.f), 0., 0.;
 	//qGoal << .17, -.17, 0, 0., 0.;
-	/*
-	Eigen::VectorXd segment(qGoal - qStart), delta(5);
-	delta = segment.normalized() * stepsize;
-	int steps = int(segment.norm() / stepsize);
 
-	do
-	{
-	if (!cell.CheckPosition(qStart))
-	{
-	for (int i = 0; i < 10; ++i)
-	{
-	path.push_back(qStart);
-	qStart += delta * .1f;
-	}
-	}
-	else
-	{
-	path.push_back(qStart);
-	qStart += delta;
-	}
-	} while (--steps > 0);
-
-	path.push_back(qGoal);
-	reverse(path.begin(), path.end());
-	write_easyrob_program_file(path, "example.prg", false);
-	path.clear();
-	// !Example
-	*/
 #elif TEST_CASE == 1
 	cout << "Test case 1" << endl;
 	qStart << .6, .1, 0., 0., 0.;
@@ -237,197 +209,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	qGoal << .6, .95, DEG2RAD(-90.f), 0., 0.;
 #endif
 #endif
-	
-	
-	// ------------------------------------------------------------------------
 
-
-	// Bonus Task
-	//const int nNodes = 11;
-	//cout << "RRT with number of Nodes:" << nNodes << endl;
-
-	//std::vector<std::pair<segment_5d, edge_t>> resultEdge;
-	//std::vector<std::pair<segment_5d, edge_t>> resultEdgeB;
-	//// Add Start and Goal nodes
-	//addNode(qStart, g);
-	//addNode(qGoal, gb);
-
-	//int solutionConnectionIndexG = -1;
-	//int solutionConnectionIndexGB = -1;
-
-	//for (int i = 1; i < nNodes; ++i)
-	//{
-	//	// Add first edge
-	//	if (boost::num_edges(g) == 0)
-	//	{
-	//		// Calculate qs
-	//		Eigen::VectorXd qs, cObstacle, qn, qrand = cell.NextRandomCspace();
-	//		bool hitObs = cell.FirstContact(qs, cObstacle, g[0].q_, qrand, stepsize);
-	//		if ((qs - g[0].q_).norm() > stepsize) //qs != qStart)
-	//		{
-	//			// Add first edge and node
-	//			addEdge(0, addNode(qs, g), g, rtreeEdge);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		// Stopping Configuration
-	//		Eigen::VectorXd qs, cObstacle, qn, qrand = cell.NextRandomCspace();
-
-	//		// Find closest Edge to qrand
-	//		rtreeEdge.query(boost::geometry::index::nearest(convertEigenToPoint(qrand), 1), std::back_inserter(resultEdge));
-	//		Eigen::VectorXd nearest_A = convertPointToEigen(resultEdge.back().first.first);
-	//		Eigen::VectorXd nearest_B = convertPointToEigen(resultEdge.back().first.second);
-	//		int index_source = resultEdge.back().second.m_source;
-	//		int index_target = resultEdge.back().second.m_target;
-
-	//		// Calculate qn
-	//		double t = GetClosestPoint(nearest_A, nearest_B, qrand);
-	//		if (t < 0.0) qn = nearest_A;
-	//		else if (t > 1.0) qn = nearest_B;
-	//		else  qn = nearest_A + (nearest_B - nearest_A) * t;
-
-	//		// Calculate qs
-	//		bool hitObs = cell.FirstContact(qs, cObstacle, qn, qrand, stepsize);
-
-	//		// New sample
-	//		if ((qs - qn).norm() > stepsize)  //qs != qn)
-	//		{
-	//			// Add Sample (qs) Node
-	//			int currentSampleIndex = addNode(qs, g);
-
-	//			// Add Edges
-	//			if (t < 0.0f)
-	//				addEdge(currentSampleIndex, index_source, g, rtreeEdge);
-	//			else if (t > 1.0f)
-	//				addEdge(currentSampleIndex, index_target, g, rtreeEdge);
-	//			else
-	//			{
-	//				// Add Split Node (qn)
-	//				int splitNodeIndex = addNode(qn, g);
-
-	//				// Remove and add edges
-	//				boost::remove_edge(index_source, index_target, g);
-	//				rtreeEdge.remove(resultEdge.back());
-	//				addEdge(splitNodeIndex, index_source, g, rtreeEdge);
-	//				addEdge(splitNodeIndex, index_target, g, rtreeEdge);
-	//				addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
-	//			}
-
-	//			// --------------
-	//			// Second Tree gb
-	//			// Add first edge
-	//			if (boost::num_edges(gb) == 0)
-	//			{
-	//				// Calculate qs
-	//				Eigen::VectorXd qsB, cObstacle, qnB;
-	//				bool hitObs = cell.FirstContact(qsB, cObstacle, gb[0].q_, qs, stepsize);
-	//				if ((qsB - gb[0].q_).norm() > 0.01) //qsB != qGoal)
-	//				{
-	//					// Add first edge and node
-	//					addEdge(0, addNode(qsB, gb), gb, rtreeEdgeB);
-	//				}
-	//			}
-	//			else
-	//			{
-	//				// Stopping Configuration
-	//				Eigen::VectorXd qsB, cObstacleB, qnB;
-
-	//				// Find closest Edge to qrand
-	//				rtreeEdgeB.query(boost::geometry::index::nearest(convertEigenToPoint(qs), 1), std::back_inserter(resultEdgeB));
-	//				Eigen::VectorXd Bnearest_A = convertPointToEigen(resultEdgeB.back().first.first);
-	//				Eigen::VectorXd Bnearest_B = convertPointToEigen(resultEdgeB.back().first.second);
-	//				int index_sourceB = resultEdgeB.back().second.m_source;
-	//				int index_targetB = resultEdgeB.back().second.m_target;
-
-	//				// Calculate qn
-	//				double tB = GetClosestPoint(Bnearest_A, Bnearest_B, qs);
-	//				if (tB < 0.0) qnB = Bnearest_A;
-	//				else if (tB > 1.0) qnB = Bnearest_B;
-	//				else  qnB = Bnearest_A + (Bnearest_B - Bnearest_A) * tB;
-
-	//				// Calculate qs
-	//				bool hitObs = cell.FirstContact(qsB, cObstacleB, qnB, qs, stepsize);
-
-	//				// New sample
-	//				int currentSampleIndexB;
-	//				if ((qsB - qnB).norm() > stepsize)// qsB != qnB)
-	//				{
-	//					// Add Sample (qs) Node
-	//					currentSampleIndexB = addNode(qsB, gb);
-
-	//					// Add Edges
-	//					if (tB < 0.0f)
-	//						addEdge(currentSampleIndexB, index_sourceB, gb, rtreeEdgeB);
-	//					else if (tB > 1.0f)
-	//						addEdge(currentSampleIndexB, index_targetB, gb, rtreeEdgeB);
-	//					else
-	//					{
-	//						// Add Split Node (qn)
-	//						int splitNodeIndexB = addNode(qnB, gb);
-
-	//						// Remove and add edges
-	//						boost::remove_edge(index_sourceB, index_targetB, gb);
-	//						rtreeEdgeB.remove(resultEdgeB.back());
-	//						addEdge(splitNodeIndexB, index_sourceB, gb, rtreeEdgeB);
-	//						addEdge(splitNodeIndexB, index_targetB, gb, rtreeEdgeB);
-	//						addEdge(splitNodeIndexB, currentSampleIndexB, gb, rtreeEdgeB);
-	//					}
-	//				}
-	//				if ((qsB - qs).norm() < stepsize && cell.CheckMotion(qsB, qs, 0.01f)) //qsB == qs)
-	//				{
-	//					std::cout << "Success!" << std::endl;
-	//					solutionConnectionIndexG = currentSampleIndex;
-	//					solutionConnectionIndexGB = currentSampleIndexB;
-	//					break;
-	//				}
-	//			}
-	//		}
-	//		if (boost::num_vertices(gb) < boost::num_vertices(g))
-	//		{	
-	//			g.swap(gb);
-	//			rtreeEdge.swap(rtreeEdgeB);
-	//		}
-	//	}
-
-	//	resultEdge.clear();
-	//	resultEdgeB.clear();
-	//}
-
-	//if (solutionConnectionIndexG != -1)
-	//{
-	//	// Connect paths 
-	//	vector<Eigen::VectorXd> pathG = calculateShortestPath(g, 0, solutionConnectionIndexG, cell);
-	//	std::cout << "Path size of G: " << pathG.size() << std::endl;
-	//	vector<Eigen::VectorXd> pathGB = calculateShortestPath(gb, 0, solutionConnectionIndexGB, cell);
-	//	std::cout << "Path size of GB: " << pathGB.size() << std::endl;
-	//	reverse(pathGB.begin(), pathGB.end());
-	//	pathG.insert(pathG.end(), pathGB.begin(), pathGB.end());
-	//	std::cout << "Path size of Complete Graph: " << pathG.size() << std::endl;
-
-	//	// Refine Path
-	//	refinePath(pathG, cell);
-	//	reverse(pathG.begin(), pathG.end());
-	//	std::cout << "Path size of Refined Graph: " << pathG.size() << std::endl;
-
-	//	write_easyrob_program_file(pathG, "rrt.prg");
-	//}
-
-	//std::cout << "Number of Nodes in g: " << boost::num_vertices(g) << std::endl;
-	//write_gnuplot_file(g, "VisibilityGraph.dat");
-	//std::cout << "Number of Nodes in gb: " << boost::num_vertices(gb) << std::endl;
-	//write_gnuplot_file(gb, "VisibilityGraphB.dat");
-
-
-
-	// -------------------------------------------------------------------------------------------
-
-#define TASK 1
+#define TASK 2
 #ifdef TASK
 #if TASK == 0
 	// First Task
 	knn_rtree_edge_t rtreeEdge;
 	const int nNodes = 50;
+	std::cout << "RRT whitout goal" << std::endl;
 	cout << "RRT with number of Nodes:" << nNodes << endl;
 
 	// Add Start and Goal nodes
@@ -462,93 +251,221 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 #elif TASK == 1
-// Second Task
-knn_rtree_edge_t rtreeEdge;
-const int nNodes = 150000;
-std::cout << "RRT with number of Nodes:" << nNodes << endl;
+	// Second Task
+	knn_rtree_edge_t rtreeEdge;
+	const int nNodes = 10000;
+	std::cout << "RRT with goal bias" << std::endl;
+	std::cout << "RRT with number of Nodes:" << nNodes << endl;
 
-// Add Start and Goal nodes
-addNode(qStart, g);
+	bool bGoToGoal = false;
+	// Add Start and Goal nodes
+	addNode(qStart, g);
 
-for (int i = 1; i < nNodes; ++i)
-{
-	// Add first edge
-	if (boost::num_edges(g) == 0)
+	for (int i = 1; i < nNodes; ++i)
 	{
-		// Calculate qs
-		Eigen::VectorXd qs, cObstacle, qn, qrand = cell.NextRandomCspace();
-		bool hitObs = cell.FirstContact(qs, cObstacle, g[0].q_, qrand, stepsize);
-		if ((qs - g[0].q_).norm() > stepsize) //qs != qStart)
+		// Add first edge
+		if (boost::num_edges(g) == 0)
 		{
-			// Add first edge and node
-			addEdge(0, addNode(qs, g), g, rtreeEdge);
-		}
-	}
-	else
-	{
-		// Try to connect to goal (20%)
-		Eigen::VectorXd sample = cell.NextRandomCspace();
-		if ((i % (int)(nNodes / 20) == 0) || boost::num_edges(g) == 1)
-			sample = qGoal;
-
-		// Stopping Configuration
-		Eigen::VectorXd qs, cObstacle, qrand = sample;
-
-		// Find closest Edge to qrand
-		NearestEdgeQN neqn = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdge, g);
-
-		// Calculate qs
-		bool hitObs = cell.FirstContact(qs, cObstacle, neqn.qn, qrand, stepsize);
-
-		if (cell.CheckMotion(qs, qGoal, stepsize))
-		{
-			std::cout << "Success";
-			int currentSampleIndex = addNode(qs, g);
-			if (neqn.t < 0.0f)
-				addEdge(neqn.index_source, currentSampleIndex, g, rtreeEdge);
-			else if (neqn.t > 1.0f)
-				addEdge(neqn.index_target, currentSampleIndex, g, rtreeEdge);
-			else
+			// Calculate qs
+			Eigen::VectorXd qs, cObstacle, qn, qrand = cell.NextRandomCspace();
+			bool hitObs = cell.FirstContact(qs, cObstacle, g[0].q_, qrand, stepsize);
+			if ((qs - g[0].q_).norm() > stepsize) //qs != qStart)
 			{
-				int splitNodeIndex = addSplitNode(neqn.qn, neqn.index_source, neqn.index_target, g, rtreeEdge);
-				addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
-			}
-
-			solutionIndex = addNode(qGoal, g);
-			addEdge(currentSampleIndex, solutionIndex, g, rtreeEdge);
-			break;
-		}
-
-		// New sample
-		if ((qs - neqn.qn).norm() > stepsize)  //qs != qn)
-		{
-			// Add Sample (qs) Node
-			int currentSampleIndex = addNode(qs, g);
-
-			// Add Edges
-			if (neqn.t < 0.0f)
-				addEdge(neqn.index_source, currentSampleIndex, g, rtreeEdge);
-			else if (neqn.t > 1.0f)
-				addEdge(neqn.index_target, currentSampleIndex, g, rtreeEdge);
-			else
-			{
-				// Add Split Node (qn)
-				int splitNodeIndex = addSplitNode(neqn.qn, neqn.index_source, neqn.index_target, g, rtreeEdge);
-				addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
+				// Add first edge and node
+				addEdge(0, addNode(qs, g), g, rtreeEdge);
+				bGoToGoal = true;
 			}
 		}
+		else
+		{
+			// Try to connect to goal (20%)
+			Eigen::VectorXd sample = cell.NextRandomCspace();
+			if ((i % (int)(nNodes / 20) == 0) || bGoToGoal == true)
+			{
+				sample = qGoal;
+				bGoToGoal = false;
+			}
+
+			// Stopping Configuration
+			Eigen::VectorXd qs, cObstacle, qrand = sample;
+
+			// Find closest Edge to qrand
+			NearestEdgeQN neqn = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdge, g);
+
+			// Calculate qs
+			bool hitObs = cell.FirstContact(qs, cObstacle, neqn.qn, qrand, stepsize);
+
+			if (cell.CheckMotion(qs, qGoal, stepsize))
+			{
+				std::cout << "Success!!!" << std::endl;
+				int currentSampleIndex = addNode(qs, g);
+				if (neqn.t < 0.0f)
+					addEdge(neqn.index_source, currentSampleIndex, g, rtreeEdge);
+				else if (neqn.t > 1.0f)
+					addEdge(neqn.index_target, currentSampleIndex, g, rtreeEdge);
+				else
+				{
+					int splitNodeIndex = addSplitNode(neqn.qn, neqn.index_source, neqn.index_target, g, rtreeEdge);
+					addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
+				}
+
+				solutionIndex = addNode(qGoal, g);
+				addEdge(currentSampleIndex, solutionIndex, g, rtreeEdge);
+				break;
+			}
+
+			// New sample
+			if ((qs - neqn.qn).norm() > stepsize)  //qs != qn)
+			{
+				// Add Sample (qs) Node
+				int currentSampleIndex = addNode(qs, g);
+
+				// Add Edges
+				if (neqn.t < 0.0f)
+					addEdge(neqn.index_source, currentSampleIndex, g, rtreeEdge);
+				else if (neqn.t > 1.0f)
+					addEdge(neqn.index_target, currentSampleIndex, g, rtreeEdge);
+				else
+				{
+					// Add Split Node (qn)
+					int splitNodeIndex = addSplitNode(neqn.qn, neqn.index_source, neqn.index_target, g, rtreeEdge);
+					addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
+				}
+			}
+		}
 	}
-}
+#elif TASK == 2
+	// Bonus Task
+	knn_rtree_edge_t rtreeEdge;
+	knn_rtree_edge_t rtreeEdgeB;
+	const int nNodes = 10000;
+	std::cout << "Bidirectional balanced RRT" << std::endl;
+	std::cout << "RRT with number of Nodes:" << nNodes << endl;
+
+	// Add Start and Goal nodes
+	addNode(qStart, g);
+	addNode(qGoal, gb);
+
+	for (int i = 1; i < nNodes; ++i)
+	{
+		// Add first edge
+		if (boost::num_edges(g) == 0)
+		{
+			// Calculate qs
+			Eigen::VectorXd qs, cObstacle, qn, qrand = cell.NextRandomCspace();
+			bool hitObs = cell.FirstContact(qs, cObstacle, g[0].q_, qrand, stepsize);
+			if ((qs - g[0].q_).norm() > stepsize) //qs != qStart)
+			{
+				// Add first edge and node
+				addEdge(0, addNode(qs, g), g, rtreeEdge);
+			}
+		}
+		else
+		{
+			// Stopping Configuration
+			Eigen::VectorXd qs, cObstacle, qrand = cell.NextRandomCspace();
+
+			// Find closest Edge to qrand
+			NearestEdgeQN neqn = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdge, g);
+
+			// Calculate qs
+			bool hitObs = cell.FirstContact(qs, cObstacle, neqn.qn, qrand, stepsize);
+
+			// New sample
+			if ((qs - neqn.qn).norm() > stepsize)  //qs != qn)
+			{
+				// Add Sample (qs) Node
+				int currentSampleIndex = addNode(qs, g);
+
+				// Add Edges
+				if (neqn.t < 0.0f)
+					addEdge(neqn.index_source, currentSampleIndex, g, rtreeEdge);
+				else if (neqn.t > 1.0f)
+					addEdge(neqn.index_target, currentSampleIndex, g, rtreeEdge);
+				else
+				{
+					// Add Split Node (qn)
+					int splitNodeIndex = addSplitNode(neqn.qn, neqn.index_source, neqn.index_target, g, rtreeEdge);
+					addEdge(splitNodeIndex, currentSampleIndex, g, rtreeEdge);
+				}
+
+				// ----------------------------------------------------------------------------
+				// Second Tree 
+				// Add first edge
+				if (boost::num_edges(gb) == 0)
+				{
+					// Calculate qs
+					Eigen::VectorXd qsB, cObstacleB, qnB, qrandB = cell.NextRandomCspace();
+					bool hitObs = cell.FirstContact(qsB, cObstacleB, gb[0].q_, qrandB, stepsize);
+					if ((qsB - gb[0].q_).norm() > stepsize) //qs != qStart)
+					{
+						// Add first edge and node
+						addEdge(0, addNode(qsB, gb), gb, rtreeEdgeB);
+					}
+				}
+				else
+				{
+					// Find closest Edge to qrand
+					qrand = qs;
+					NearestEdgeQN neqnB = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdgeB, gb);
+
+					// Calculate qsB
+					Eigen::VectorXd qsB, cObstacleB;
+					bool hitObs = cell.FirstContact(qsB, cObstacle, neqnB.qn, qrand, stepsize);
+					int qsBIndex = -1;
+					// New sample
+					if ((qsB - neqnB.qn).norm() > stepsize)  //qs != qn)
+					{
+						// Add Sample (qs) Node
+						qsBIndex = addNode(qsB, gb);
+
+						// Add Edges
+						if (neqnB.t < 0.0f)
+							addEdge(neqnB.index_source, qsBIndex, gb, rtreeEdgeB);
+						else if (neqnB.t > 1.0f)
+							addEdge(neqnB.index_target, qsBIndex, gb, rtreeEdgeB);
+						else
+						{
+							// Add Split Node (qn)
+							int splitNodeIndex = addSplitNode(neqnB.qn, neqnB.index_source, neqnB.index_target, gb, rtreeEdgeB);
+							addEdge(splitNodeIndex, qsBIndex, gb, rtreeEdgeB);
+						}
+					}
+					if ((qsB - qs).norm() < stepsize && cell.CheckMotion(qsB, qs, 0.01f)) //qsB == qs)
+					{
+						std::cout << "Success!!!" << std::endl;
+						solutionIndex = currentSampleIndex;
+						solutionIndexB = qsBIndex;
+						break;
+					}
+				}
+				if (boost::num_vertices(gb) < boost::num_vertices(g))
+				{
+					g.swap(gb);
+					rtreeEdge.swap(rtreeEdgeB);
+				}
+			}
+		}
+	}
 
 #endif
 #endif
 
+	// Calculate shortest Paths
 	if (solutionIndex != -1)
 	{
 		// Connect paths 
 		vector<Eigen::VectorXd> pathG = calculateShortestPath(g, 0, solutionIndex, cell);
 		std::cout << "Path size of G: " << pathG.size() << std::endl;
 
+		if (solutionIndexB != -1)
+		{
+			vector<Eigen::VectorXd> pathGB = calculateShortestPath(gb, 0, solutionIndexB, cell);
+			std::cout << "Path size of GB: " << pathGB.size() << std::endl;
+			reverse(pathGB.begin(), pathGB.end());
+			pathG.insert(pathG.end(), pathGB.begin(), pathGB.end());
+			std::cout << "Path size of Complete Graph: " << pathG.size() << std::endl;
+		}
 		// Refine Path
 		refinePath(pathG, cell);
 		reverse(pathG.begin(), pathG.end());
@@ -557,8 +474,12 @@ for (int i = 1; i < nNodes; ++i)
 		write_easyrob_program_file(pathG, "rrt.prg");
 	}
 
+	// Print Graphs
 	std::cout << "Number of Nodes in g: " << boost::num_vertices(g) << std::endl;
 	write_gnuplot_file(g, "VisibilityGraph.dat");
+
+	std::cout << "Number of Nodes in gb: " << boost::num_vertices(gb) << std::endl;
+	write_gnuplot_file(gb, "VisibilityGraphB.dat");
 
 	return EXIT_SUCCESS;
 }
