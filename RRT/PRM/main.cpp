@@ -11,12 +11,13 @@ using namespace std;
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
+// 2D Points!
 typedef boost::geometry::model::d2::point_xy<double> point_type;
 typedef boost::geometry::model::segment<point_type> segment_type;
-
 typedef std::pair<segment_type, edge_t> rtree_value_edge;
 typedef boost::geometry::index::rtree<rtree_value_edge, boost::geometry::index::quadratic<16>> knn_rtree_edge_t;
 
+// Convert 5D VectorXd to 2D Point_type (just ignore Rotation ;)
 point_type convertEigenTo2DPoint(Eigen::VectorXd inPoint)
 {
 	point_type point;
@@ -25,6 +26,8 @@ point_type convertEigenTo2DPoint(Eigen::VectorXd inPoint)
 	return point;
 }
 
+// Get Closest Point on Line (A,B) to Point P
+// Projection of P onto Line (A, B) 
 double GetClosestPoint(point_type A, point_type B, point_type P)
 {
 	point_type AP = P;
@@ -39,6 +42,7 @@ double GetClosestPoint(point_type A, point_type B, point_type P)
 	return t;
 }
 
+// Add Edge to Graph and Rtree
 void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtreeEdge)
 {
 	// To graph
@@ -57,6 +61,7 @@ int addNode(Eigen::VectorXd node, graph_t& g)
 	return index;
 }
 
+// Split the Edge and add all the new Nodes/Edges
 int addSplitNode(Eigen::VectorXd splitNode, int source, int target, graph_t& g, knn_rtree_edge_t& rtreeEdge)
 {
 	// Add Split Node (qn)
@@ -80,6 +85,7 @@ struct NearestEdgeQN
 	Eigen::VectorXd qn;
 };
 
+// Calculate Nearest Edge/Node to qrand
 NearestEdgeQN calculateQNearest(point_type qrand, knn_rtree_edge_t& rtreeEdge, graph_t& g)
 {
 	// Find closest Edge to qrand
@@ -157,7 +163,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	int solutionIndexB = -1;
 	const float stepsize = .025f;
 
-#define TEST_CASE 1
+
+// Change Algorithm
+#define TASK 0 // 0 : RRTnoGoal, 1: RRTgoalBias, 2: bidirectionalRRT
+
+#define TEST_CASE 1 // change Test Case
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 
@@ -210,14 +220,14 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 
-#define TASK 2
+
 #ifdef TASK
 #if TASK == 0
 	// First Task
 	knn_rtree_edge_t rtreeEdge;
-	const int nNodes = 50;
-	std::cout << "RRT whitout goal" << std::endl;
-	cout << "RRT with number of Nodes:" << nNodes << endl;
+	const int nNodes = 250; // K
+	std::cout << "Algorithm: RRT whitout goal" << std::endl;
+	cout << "Number of Nodes (K):" << nNodes << endl;
 
 	// Add Start and Goal nodes
 	addNode(qStart, g);
@@ -254,8 +264,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Second Task
 	knn_rtree_edge_t rtreeEdge;
 	const int nNodes = 10000;
-	std::cout << "RRT with goal bias" << std::endl;
-	std::cout << "RRT with number of Nodes:" << nNodes << endl;
+	std::cout << "Algorithm: RRT with goal bias" << std::endl;
+	std::cout << "Number of maximum Nodes:" << nNodes << endl;
 
 	bool bGoToGoal = false;
 	// Add Start and Goal nodes
@@ -339,8 +349,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	knn_rtree_edge_t rtreeEdge;
 	knn_rtree_edge_t rtreeEdgeB;
 	const int nNodes = 10000;
-	std::cout << "Bidirectional balanced RRT" << std::endl;
-	std::cout << "RRT with number of Nodes:" << nNodes << endl;
+	std::cout << "Algorithm: Bidirectional balanced RRT" << std::endl;
+	std::cout << "Number of maximum Nodes:" << nNodes << endl;
 
 	// Add Start and Goal nodes
 	addNode(qStart, g);
@@ -465,6 +475,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			reverse(pathGB.begin(), pathGB.end());
 			pathG.insert(pathG.end(), pathGB.begin(), pathGB.end());
 			std::cout << "Path size of Complete Graph: " << pathG.size() << std::endl;
+			reverse(pathG.begin(), pathG.end());
 		}
 		// Refine Path
 		refinePath(pathG, cell);
@@ -473,13 +484,17 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		write_easyrob_program_file(pathG, "rrt.prg");
 	}
+	else std::cout << "No solution found!" << std::endl;
 
 	// Print Graphs
 	std::cout << "Number of Nodes in g: " << boost::num_vertices(g) << std::endl;
 	write_gnuplot_file(g, "VisibilityGraph.dat");
 
-	std::cout << "Number of Nodes in gb: " << boost::num_vertices(gb) << std::endl;
-	write_gnuplot_file(gb, "VisibilityGraphB.dat");
+	if (solutionIndexB != -1)
+	{
+		std::cout << "Number of Nodes in gb: " << boost::num_vertices(gb) << std::endl;
+		write_gnuplot_file(gb, "VisibilityGraphB.dat");
+	}
 
 	return EXIT_SUCCESS;
 }
