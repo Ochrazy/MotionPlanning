@@ -17,12 +17,30 @@ typedef boost::geometry::model::segment<point_type> segment_type;
 typedef std::pair<segment_type, edge_t> rtree_value_edge;
 typedef boost::geometry::index::rtree<rtree_value_edge, boost::geometry::index::quadratic<16>> knn_rtree_edge_t;
 
+// 5D Points!
+typedef boost::geometry::model::point<float, 5, bg::cs::cartesian> Point5D;
+typedef boost::geometry::model::segment<Point5D> Segment5D;
+typedef std::pair<Segment5D, edge_t> Rtree_value_edge5D;
+typedef boost::geometry::index::rtree<Rtree_value_edge5D, boost::geometry::index::quadratic<16>> Knn_rtree_edge5D;
+
 // Convert 5D VectorXd to 2D Point_type (just ignore Rotation ;)
 point_type convertEigenTo2DPoint(Eigen::VectorXd inPoint)
 {
 	point_type point;
 	point.set<0>(inPoint[0]);
 	point.set<1>(inPoint[1]);
+	return point;
+}
+
+// Convert 5D VectorXd to 2D Point_type (just ignore Rotation ;)
+Point5D convertEigenToPoint(Eigen::VectorXd inPoint)
+{
+	Point5D point;
+	point.set<0>(inPoint[0]);
+	point.set<1>(inPoint[1]);
+	point.set<2>(inPoint[2]);
+	point.set<3>(inPoint[3]);
+	point.set<4>(inPoint[4]);
 	return point;
 }
 
@@ -42,6 +60,24 @@ double GetClosestPoint(point_type A, point_type B, point_type P)
 	return t;
 }
 
+// Get Closest Point on Line (A,B) to Point P
+// Projection of P onto Line (A, B) 
+double GetClosestPoint(Point5D A, Point5D B, Point5D P)
+{
+	Point5D AP = P;
+	boost::geometry::subtract_point(AP, A);
+	Point5D AB = B;
+	boost::geometry::subtract_point(AB, A);
+
+	double ab2 = AB.get<0>() * AB.get<0>() + AB.get<1>() * AB.get<1>() + AB.get<2>() * AB.get<2>() 
+				+ AB.get<3>() * AB.get<3>() + AB.get<4>() * AB.get<4>();
+	double ap_ab = AP.get<0>() * AB.get<0>() + AP.get<1>() * AB.get<1>() + AP.get<2>() * AB.get<2>() 
+					+ AP.get<3>() * AB.get<3>() + AP.get<4>() * AB.get<4>();
+	double t = ap_ab / ab2;
+
+	return t;
+}
+
 // Add Edge to Graph and Rtree
 void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtreeEdge)
 {
@@ -49,6 +85,16 @@ void addEdge(int firstIndex, int secondIndex, graph_t& g, knn_rtree_edge_t& rtre
 	boost::add_edge(firstIndex, secondIndex, g);
 	// To R-Tree
 	segment_type edge(convertEigenTo2DPoint(g[firstIndex].q_), convertEigenTo2DPoint(g[secondIndex].q_));
+	rtreeEdge.insert(make_pair(edge, boost::edge(firstIndex, secondIndex, g).first));
+}
+
+// Add Edge to Graph and Rtree
+void addEdge(int firstIndex, int secondIndex, graph_t& g, Knn_rtree_edge5D& rtreeEdge)
+{
+	// To graph
+	boost::add_edge(firstIndex, secondIndex, g);
+	// To R-Tree
+	Segment5D edge(convertEigenToPoint(g[firstIndex].q_), convertEigenToPoint(g[secondIndex].q_));
 	rtreeEdge.insert(make_pair(edge, boost::edge(firstIndex, secondIndex, g).first));
 }
 
@@ -77,6 +123,22 @@ int addSplitNode(Eigen::VectorXd splitNode, int source, int target, graph_t& g, 
 	return splitNodeIndex;
 }
 
+// Split the Edge and add all the new Nodes/Edges
+int addSplitNode(Eigen::VectorXd splitNode, int source, int target, graph_t& g, Knn_rtree_edge5D& rtreeEdge)
+{
+	// Add Split Node (qn)
+	int splitNodeIndex = addNode(splitNode, g);
+
+	// Remove and add edges
+	boost::remove_edge(source, target, g);
+	Segment5D edgeSegment(convertEigenToPoint(g[source].q_), convertEigenToPoint(g[target].q_));
+	rtreeEdge.remove(make_pair(edgeSegment, boost::edge(source, target, g).first));
+	addEdge(splitNodeIndex, source, g, rtreeEdge);
+	addEdge(splitNodeIndex, target, g, rtreeEdge);
+
+	return splitNodeIndex;
+}
+
 struct NearestEdgeQN
 {
 	int index_source;
@@ -90,6 +152,26 @@ NearestEdgeQN calculateQNearest(point_type qrand, knn_rtree_edge_t& rtreeEdge, g
 {
 	// Find closest Edge to qrand
 	std::vector<std::pair<segment_type, edge_t>> resultEdge;
+	rtreeEdge.query(boost::geometry::index::nearest(qrand, 1), std::back_inserter(resultEdge));
+	int index_source = resultEdge.back().second.m_source;
+	int index_target = resultEdge.back().second.m_target;
+
+	// Calculate qn
+	Eigen::VectorXd qn;
+	double t = GetClosestPoint(resultEdge.back().first.first, resultEdge.back().first.second, qrand);
+	if (t < 0.0) qn = g[index_source].q_;
+	else if (t > 1.0) qn = g[index_target].q_;
+	else  qn = g[index_source].q_ + (g[index_target].q_ - g[index_source].q_) * t;
+
+	NearestEdgeQN result = { index_source, index_target, t, qn };
+	return result;
+}
+
+// Calculate Nearest Edge/Node to qrand
+NearestEdgeQN calculateQNearest(Point5D qrand, Knn_rtree_edge5D& rtreeEdge, graph_t& g)
+{
+	// Find closest Edge to qrand
+	std::vector<std::pair<Segment5D, edge_t>> resultEdge;
 	rtreeEdge.query(boost::geometry::index::nearest(qrand, 1), std::back_inserter(resultEdge));
 	int index_source = resultEdge.back().second.m_source;
 	int index_target = resultEdge.back().second.m_target;
@@ -165,9 +247,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 // Change Algorithm
-#define TASK 0 // 0 : RRTnoGoal, 1: RRTgoalBias, 2: bidirectionalRRT
+#define TASK 2 // 0 : RRTnoGoal, 1: RRTgoalBias, 2: bidirectionalRRT
 
-#define TEST_CASE 1 // change Test Case
+#define TEST_CASE 6 // change Test Case
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 
@@ -262,7 +344,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 #elif TASK == 1
 	// Second Task
-	knn_rtree_edge_t rtreeEdge;
+	Knn_rtree_edge5D rtreeEdge;
 	const int nNodes = 10000;
 	std::cout << "Algorithm: RRT with goal bias" << std::endl;
 	std::cout << "Number of maximum Nodes:" << nNodes << endl;
@@ -300,7 +382,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			Eigen::VectorXd qs, cObstacle, qrand = sample;
 
 			// Find closest Edge to qrand
-			NearestEdgeQN neqn = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdge, g);
+			NearestEdgeQN neqn = calculateQNearest(convertEigenToPoint(qrand), rtreeEdge, g);
 
 			// Calculate qs
 			bool hitObs = cell.FirstContact(qs, cObstacle, neqn.qn, qrand, stepsize);
@@ -346,8 +428,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 #elif TASK == 2
 	// Bonus Task
-	knn_rtree_edge_t rtreeEdge;
-	knn_rtree_edge_t rtreeEdgeB;
+	Knn_rtree_edge5D rtreeEdge;
+	Knn_rtree_edge5D rtreeEdgeB;
 	const int nNodes = 10000;
 	std::cout << "Algorithm: Bidirectional balanced RRT" << std::endl;
 	std::cout << "Number of maximum Nodes:" << nNodes << endl;
@@ -376,7 +458,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			Eigen::VectorXd qs, cObstacle, qrand = cell.NextRandomCspace();
 
 			// Find closest Edge to qrand
-			NearestEdgeQN neqn = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdge, g);
+			NearestEdgeQN neqn = calculateQNearest(convertEigenToPoint(qrand), rtreeEdge, g);
 
 			// Calculate qs
 			bool hitObs = cell.FirstContact(qs, cObstacle, neqn.qn, qrand, stepsize);
@@ -417,7 +499,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				{
 					// Find closest Edge to qrand
 					qrand = qs;
-					NearestEdgeQN neqnB = calculateQNearest(convertEigenTo2DPoint(qrand), rtreeEdgeB, gb);
+					NearestEdgeQN neqnB = calculateQNearest(convertEigenToPoint(qrand), rtreeEdgeB, gb);
 
 					// Calculate qsB
 					Eigen::VectorXd qsB, cObstacleB;
@@ -479,7 +561,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		// Refine Path
 		refinePath(pathG, cell);
-		reverse(pathG.begin(), pathG.end());
+		//reverse(pathG.begin(), pathG.end());
 		std::cout << "Path size of Refined Graph: " << pathG.size() << std::endl;
 
 		write_easyrob_program_file(pathG, "rrt.prg");
