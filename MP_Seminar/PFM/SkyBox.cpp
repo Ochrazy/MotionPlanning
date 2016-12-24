@@ -33,42 +33,66 @@ int SkyBox::LoadGLTextures()                                    // Load Bitmaps 
 
 	texture[0] = SOIL_load_OGL_texture
 		(
-		"landscape10.bmp",
+#ifdef X64
+		"../../data/landscape10.bmp",
+#else
+		"../data/landscape10.bmp",
+#endif
 		SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y
 		);
 	texture[1] = SOIL_load_OGL_texture
 		(
-		"landscape11.bmp",
-		SOIL_LOAD_AUTO,
+#ifdef X64
+			"../../data/landscape11.bmp",
+#else
+			"../data/landscape11.bmp",
+#endif		
+			SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y
 		);
 	texture[2] = SOIL_load_OGL_texture
 		(
-		"landscape12.bmp",
-		SOIL_LOAD_AUTO,
+#ifdef X64
+			"../../data/landscape12.bmp",
+#else
+			"../data/landscape12.bmp",
+#endif
+			SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y
 		);
 	texture[3] = SOIL_load_OGL_texture
 		(
-		"landscape13.bmp",
+#ifdef X64
+			"../../data/landscape13.bmp",
+#else
+			"../data/landscape13.bmp",
+#endif
 		SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y
 		);
 	texture[4] = SOIL_load_OGL_texture
 		(
-		"landscape14.bmp",
+#ifdef X64
+			"../../data/landscape14.bmp",
+#else
+			"../data/landscape14.bmp",
+#endif
 		SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y
 		);
 	texture[5] = SOIL_load_OGL_texture
 		(
-		"landscape15.bmp",
+#ifdef X64
+			"../../data/landscape15.bmp",
+#else
+			"../data/landscape15.bmp",
+#endif
 		SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y

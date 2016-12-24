@@ -90,8 +90,8 @@ void Init() {
 	//	Image *image3 = Load_BMP("wolken_texture.bmp");			// BMP-Bild laden, prüfen und Bitmap erzeugen
 	//	Load_Texture(image3,2);									// Convert To A Texture
 	//	delete image3;											// Image Objekt loeschen
-	//skybox.SkyboxInit();
-	//roboter.init(mass, farben, animationen);
+	skybox.SkyboxInit();
+	roboter.init(mass, farben, animationen);
 	
 	
 }
@@ -105,8 +105,8 @@ void RenderScene(void) {
 		camera.lux, camera.luy, camera.luz); // Kamera von oben
 	glPushMatrix();
 	
-	//skybox.paint();
-	//roboter.paint();
+	skybox.paint();
+	roboter.paint();
 	
 	GLUquadricObj *quadratic;
 	quadratic = gluNewQuadric();
