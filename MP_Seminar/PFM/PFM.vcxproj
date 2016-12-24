@@ -134,7 +134,9 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Arm.cpp" />
     <ClCompile Include="Bein.cpp" />
+    <ClCompile Include="Box.cpp" />
     <ClCompile Include="Cylinder.cpp" />
+    <ClCompile Include="Dist.cpp" />
     <ClCompile Include="Fuss.cpp" />
     <ClCompile Include="Hand.cpp" />
     <ClCompile Include="Koerper.cpp" />
@@ -143,6 +145,7 @@
     <ClCompile Include="Oberarm.cpp" />
     <ClCompile Include="Oberkoerper.cpp" />
     <ClCompile Include="Oberschenkel.cpp" />
+    <ClCompile Include="Potential.cpp" />
     <ClCompile Include="Roboter.cpp" />
     <ClCompile Include="SkyBox.cpp" />
     <ClCompile Include="Unterarm.cpp" />
@@ -153,14 +156,18 @@
     <ClInclude Include="Animation.h" />
     <ClInclude Include="Arm.h" />
     <ClInclude Include="Bein.h" />
+    <ClInclude Include="Box.h" />
     <ClInclude Include="Cylinder.h" />
     <ClInclude Include="Fuss.h" />
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="Hand.h" />
     <ClInclude Include="Koerper.h" />
     <ClInclude Include="Kopf.h" />
     <ClInclude Include="Oberarm.h" />
     <ClInclude Include="Oberkoerper.h" />
     <ClInclude Include="Oberschenkel.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Potential.h" />
     <ClInclude Include="Roboter.h" />
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="Unterarm.h" />
