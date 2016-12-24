@@ -12,7 +12,7 @@
 #include "Point.h"
 #include "Potential.h"
 
-const int nRob = 2;     // Anzahl der Roboterglieder
+const int nRob = 4;     // Anzahl der Roboterglieder
 GLUquadricObj *quadratic[nRob];
 
 

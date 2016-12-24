@@ -56,10 +56,10 @@ void Init() {
 
 	// Hindernisse initialisieren
 	// Hierbei wird für jedes Hinderniss die Größe ( Skalierung ) und die Position im Raum gesetzt
-	/*aHindernis[0].SetCenter(0., 0., 0.);  // outer bound
+	aHindernis[0].SetCenter(0., 0., 0.);  // outer bound
 	aHindernis[0].SetRadius(1.);
 
-	aHindernis[1].SetCenter(0.1, 0.1, 0.0);
+	/*aHindernis[1].SetCenter(0.1, 0.1, 0.0);
 	aHindernis[1].SetRadius(0.1);
 
 	aHindernis[2].SetCenter(0.5, 0.1, 0.0);
@@ -79,12 +79,19 @@ void Init() {
 		local_minimum_reached[i] = false;
 
 		// Initialize start, goal, actPoint and heading
-		if(i == 1){
+		if(i == 0){
 			pot[i].setStartPosition(4.5, 4.5);
 			pot[i].setGoalPosition(-4.5, -4.5);
-		}else if (i == 2) {
+		}else if (i == 1) {
 			pot[i].setStartPosition(-4.5, -4.5);
 			pot[i].setGoalPosition(4.5, 4.5);
+		}else if (i == 2) {
+			pot[i].setStartPosition(4.5, -4.5);
+			pot[i].setGoalPosition(-4.5, 4.5);
+		}
+		else if (i == 3) {
+			pot[i].setStartPosition(-4.5, 4.5);
+			pot[i].setGoalPosition(4.5, -4.5);
 		}
 
 		roboterPot[i].SetCenter(pot[i].getStartPosition());
@@ -105,7 +112,7 @@ void RenderScene(void) {
 		camera.lux, camera.luy, camera.luz); // Kamera von oben
 	glPushMatrix();
 	
-	// skybox.paint();
+	//skybox.paint();
 	// roboter.paint();
 	
 	glPushMatrix();
@@ -120,6 +127,20 @@ void RenderScene(void) {
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 		glTranslatef( robPos[1].x, robPos[1].y, -0.5f);
 		gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor4f(farben[0], farben[1], farben[2], farben[3]);
+	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+	glTranslatef(robPos[2].x, robPos[2].y, -0.5f);
+	gluCylinder(quadratic[0], 0.2f, 0.2f, 0.55f, 32, 32);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor4f(farben[8], farben[9], farben[10], farben[11]);
+	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+	glTranslatef(robPos[3].x, robPos[3].y, -0.5f);
+	gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
 	glPopMatrix();
 
 	glScalef(10.0, 0.1, 10.0);
@@ -157,15 +178,15 @@ void Animate(int value) {
 		if (!goal_reached[i] && !local_minimum_reached[i])
 		//if (!goal_reached && !local_minimum_reached)
 		{
-			goal_reached[i] = pot[i].update_cylinder_navigation(aHindernis, &roboterPot[i], 0);
+			goal_reached[i] = pot[i].update_cylinder_navigation(aHindernis, &roboterPot[i], 1);
 			robPos[i] = pot[i].getRobPos();
 			local_minimum_reached[i] = check_local_minimum(path[i], robPos[i]);
 			path[i].push_back(pot[i].getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
 			cout << "Robot " << i << ": " << robPos[i].x << " " << robPos[i].y << endl; // Ausgabe auf Konsole
 
-			if (local_minimum_reached)
+			if (local_minimum_reached[i])
 				cout << "Robot " << i << ": " << "reached local minimum" << endl;
-			if (goal_reached)
+			if (goal_reached[i])
 				cout << "Robot " << i << ": " << "reached goal" << endl;
 		}
 	}
@@ -488,7 +509,7 @@ void SpecialFunc(int key, int x, int y) { // Funktions- und Pfeil-Tasten abfrage
 
 void menue() {
 	std::cout << "========================================================" << std::endl;
-	std::cout << "   Projekt Roboter - Arnold Porada, Nikita Balyschew" << std::endl;
+	std::cout << "   Projekt Roboter - Johannes Wambach, Nikita Balyschew" << std::endl;
 	std::cout << "--------------------------------------------------------" << std::endl;
 	std::cout << " < F1 >                      RESET" << std::endl;
 	std::cout << " < F2 >                      MODUS - Kamera frei bewegen" << std::endl;

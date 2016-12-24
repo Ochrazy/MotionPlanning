@@ -170,7 +170,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst
 }
 
 /*************************************************************************************************************************/
-bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[], int nObst)
+bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot, int nObst)
 {
 	Point robotPos = actPoint;
 	static int cnt = 0;
@@ -184,7 +184,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 
 		return true;
 	}
-	else if (cnt > 300)
+	else if (cnt > 5000)
 	{
 		cout << "That took way too long, abort!\n";
 		return true;
@@ -195,9 +195,9 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 	for (int x = 0; x < nObst; x++)
 	{
 		if (x == 0)
-			beta_q *= -pow(robotPos.Distance(obstacle[x].GetCenter()), 2) + pow(obstacle[x].GetRadius() + robot[0].GetRadius(), 2);
+			beta_q *= -pow(robotPos.Distance(obstacle[x].GetCenter()), 2) + pow(obstacle[x].GetRadius() + (*robot).GetRadius(), 2);
 		else
-			beta_q *= pow(robotPos.Distance(obstacle[x].GetCenter()), 2) - pow(obstacle[x].GetRadius() + robot[0].GetRadius(), 2);
+			beta_q *= pow(robotPos.Distance(obstacle[x].GetCenter()), 2) - pow(obstacle[x].GetRadius() + (*robot).GetRadius(), 2);
 	}
 
 	// Repulsive Gradient
@@ -211,9 +211,9 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 			if (j != i)
 			{
 				if (j == 0)
-					beta_j *= -pow(robotPos.Distance(obstacle[j].GetCenter()), 2) + pow(obstacle[j].GetRadius() + robot[0].GetRadius(), 2);
+					beta_j *= -pow(robotPos.Distance(obstacle[j].GetCenter()), 2) + pow(obstacle[j].GetRadius() + (*robot).GetRadius(), 2);
 				else 
-					beta_j *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius() + robot[0].GetRadius(), 2);
+					beta_j *= pow(robotPos.Distance(obstacle[j].GetCenter()), 2) - pow(obstacle[j].GetRadius() + (*robot).GetRadius(), 2);
 			}
 		}
 
@@ -251,7 +251,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder robot[]
 
 	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
 
-	robot[0].SetCenter(actPoint);
+	(*robot).SetCenter(actPoint);
 
 	return false;
 }
