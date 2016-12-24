@@ -13,7 +13,8 @@
 #include "Potential.h"
 
 const int nRob = 4;     // Anzahl der Roboterglieder
-GLUquadricObj *quadratic[nRob];
+const int nHind = 2;    // Anzahl der Hindernisse
+
 
 
 Roboter roboter;
@@ -25,12 +26,12 @@ int animationUpdateInMS = 16;
 int width = 1024, height = 768;
 GLfloat mass = 1.0; // Mass fuer die Ausdehnung des Modells
 
+GLUquadricObj *quadratic[nRob];
 Point robPos[nRob];
 bool goal_reached[nRob];
 bool local_minimum_reached[nRob];
 
-const double ds = 0.01f;
-const int nHind = 2;    // Anzahl der Hindernisse
+//const double ds = 0.01f;
 
 vector<Point> path[nRob];     // Create a vector containing integers
 Cylinder aHindernis[nHind];  // Unsere Hindernisse

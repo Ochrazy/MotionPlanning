@@ -82,3 +82,11 @@ double Cylinder::distance_sqr(Cylinder cyl2)
 	Point d = center.Sub(cyl2.center);
 	return d.SquareMagnitude() - r*r - cyl2.r*cyl2.r;
 }
+
+
+void Cylinder::Translate(double x, double y, double z)
+{
+	center.x += x;
+	center.y += y;
+	center.z += z;
+}

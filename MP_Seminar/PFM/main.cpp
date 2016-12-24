@@ -96,11 +96,12 @@ void Init() {
 
 		roboterPot[i].SetCenter(pot[i].getStartPosition());
 		pot[i].setActPoint(pot[i].getStartPosition());
+		path[i].push_back(pot[i].getStartPosition());
 	}
 	
 	
 
-//	path.push_back(pot1.getStartPosition());
+
 }
 
 void RenderScene(void) {
@@ -113,7 +114,7 @@ void RenderScene(void) {
 	glPushMatrix();
 	
 	//skybox.paint();
-	// roboter.paint();
+	//roboter.paint();
 	
 	glPushMatrix();
 		glColor4f(farben[0], farben[1], farben[2], farben[3]);
@@ -130,17 +131,17 @@ void RenderScene(void) {
 	glPopMatrix();
 
 	glPushMatrix();
-	glColor4f(farben[0], farben[1], farben[2], farben[3]);
-	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-	glTranslatef(robPos[2].x, robPos[2].y, -0.5f);
-	gluCylinder(quadratic[0], 0.2f, 0.2f, 0.55f, 32, 32);
+		glColor4f(farben[0], farben[1], farben[2], farben[3]);
+		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+		glTranslatef(robPos[2].x, robPos[2].y, -0.5f);
+		gluCylinder(quadratic[0], 0.2f, 0.2f, 0.55f, 32, 32);
 	glPopMatrix();
 
 	glPushMatrix();
-	glColor4f(farben[8], farben[9], farben[10], farben[11]);
-	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-	glTranslatef(robPos[3].x, robPos[3].y, -0.5f);
-	gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
+		glColor4f(farben[8], farben[9], farben[10], farben[11]);
+		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+		glTranslatef(robPos[3].x, robPos[3].y, -0.5f);
+		gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
 	glPopMatrix();
 
 	glScalef(10.0, 0.1, 10.0);
@@ -178,8 +179,9 @@ void Animate(int value) {
 		if (!goal_reached[i] && !local_minimum_reached[i])
 		//if (!goal_reached && !local_minimum_reached)
 		{
-			goal_reached[i] = pot[i].update_cylinder_navigation(aHindernis, &roboterPot[i], 1);
+			goal_reached[i] = pot[i].update_cylinder_navigation(aHindernis, &(roboterPot[i]), 0);
 			robPos[i] = pot[i].getRobPos();
+			roboterPot[i].Translate(robPos[i].x, robPos[i].y, robPos[i].z);
 			local_minimum_reached[i] = check_local_minimum(path[i], robPos[i]);
 			path[i].push_back(pot[i].getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
 			cout << "Robot " << i << ": " << robPos[i].x << " " << robPos[i].y << endl; // Ausgabe auf Konsole
@@ -283,15 +285,15 @@ int main(int argc, char **argv) {
 
 bool check_local_minimum(vector<Point> path, Point act)
 {
-	static int total_counter = 0;
+	/*static int total_counter = 0;
 	if (total_counter > 20)
-		if (act.Distance(path[total_counter - 20]) < 0.03)
+		if (act.Distance(path[total_counter - 20]) < 0.003)
 		{
 			return true;
 		}
 
 	total_counter++;
-
+*/
 	return false;
 }
 
