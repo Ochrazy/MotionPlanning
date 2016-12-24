@@ -134,6 +134,7 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Arm.cpp" />
     <ClCompile Include="Bein.cpp" />
+    <ClCompile Include="Cylinder.cpp" />
     <ClCompile Include="Fuss.cpp" />
     <ClCompile Include="Hand.cpp" />
     <ClCompile Include="Koerper.cpp" />
@@ -152,6 +153,7 @@
     <ClInclude Include="Animation.h" />
     <ClInclude Include="Arm.h" />
     <ClInclude Include="Bein.h" />
+    <ClInclude Include="Cylinder.h" />
     <ClInclude Include="Fuss.h" />
     <ClInclude Include="Hand.h" />
     <ClInclude Include="Koerper.h" />

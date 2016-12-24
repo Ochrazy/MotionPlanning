@@ -6,15 +6,34 @@
 
 #include <iostream>      
 #include <GL/freeglut.h>  //laedt auch glut.h und gl.h
-#include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <vector>
 #include "Animation.h"
 #include "Roboter.h"
-#include "Koerper.h"
-using namespace std;
+#include "Wuerfel.h"
+
 #include "SkyBox.h"
 #include <Windows.h>
-#define PI 3.141592654
+
+using namespace std;
+
+Roboter roboter;
+Wuerfel box;
+SkyBox skybox;
+vector<vector<Animation> > animationen;
+
+int animationUpdateInMS = 5;
+int width = 1024, height = 768;
+GLfloat mass = 1.0; // Mass fuer die Ausdehnung des Modells
+
+
+
+GLfloat farben[] = { 0.0, 0.0, 1.0, 1.0, //Kopf
+1.0, 0.0, 0.0, 1.0, //Oberkörper1
+1.0, 1.0, 1.0, 1.0, //Oberkörper2
+0.5, 0.5, 0.5, 1.0//Oberkörper3
+};
 
 struct Camera{
 	GLdouble xpos , ypos , zpos , xrot , yrot , angle, xeye, yeye, zeye, lux, luy, luz;
@@ -33,12 +52,6 @@ struct Keys
 	}
 } keys;
 
-GLfloat mass = 1.0; // Mass fuer die Ausdehnung des Modells
-GLfloat farben [] = {0.0, 0.0, 1.0, 1.0, //Kopf
-	1.0, 0.0, 0.0, 1.0, //Oberkörper1
-	1.0, 1.0, 1.0, 1.0, //Oberkörper2
-	0.5, 0.5, 0.5, 1.0//Oberkörper3
-};
 
 void MouseFunc(int, int, int, int); // Maus-Tasten und -Bewegung abfragen
 void MouseMotion(int, int); // Maus-Bewegungen mit gedrückter Maus-Taste
@@ -46,12 +59,6 @@ void PassivMouseMotion(int, int); // Maus-Bewegungen ohne gedrückte Maus-Taste
 void SpecialFunc(int, int, int); // Funktions- und Pfeil-Tasten abfragen
 void menue();
 
-Roboter roboter;
-Koerper koerper;
-SkyBox skybox;
-
-
-vector<vector<Animation> > animationen;
 
 
 void Init() {
@@ -62,7 +69,6 @@ void Init() {
 	glClearDepth(1.0); // legt den Wert fest, mit dem der Tiefenpuffer beim L�schen des selbigen gef�llt wird. 1.0 ist das maximum 0.0 ist das minimum
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_NORMALIZE); // Farbverlaeufe glaetten    
 	GLfloat mat_specular[] = {0.5f, 0.5f, 0.5f, 0.5f}; // Array fuer Glanz-Richtung
@@ -84,20 +90,33 @@ void Init() {
 	//	Image *image3 = Load_BMP("wolken_texture.bmp");			// BMP-Bild laden, prüfen und Bitmap erzeugen
 	//	Load_Texture(image3,2);									// Convert To A Texture
 	//	delete image3;											// Image Objekt loeschen
-
+	//skybox.SkyboxInit();
+	//roboter.init(mass, farben, animationen);
+	
+	
 }
 
-int z=15 , yp = 0, xp = 0;
 void RenderScene(void) {
 	// Hier befindet sich der Code der in jedem frame ausgefuehrt werden muss
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Puffer loeschen
 	glLoadIdentity(); //Ersetzt die aktuelle Matrix durch die Einheitsmatrix
-	gluLookAt((camera.xpos) * mass, (camera.ypos) * mass, (camera.zpos * mass), (camera.xeye * mass), (camera.yeye * mass), (camera.zeye * mass) ,camera.lux, camera.luy, camera.luz); // Kamera von oben
+	gluLookAt(camera.xpos, camera.ypos, camera.zpos,
+		camera.xeye, camera.yeye, camera.zeye,
+		camera.lux, camera.luy, camera.luz); // Kamera von oben
 	glPushMatrix();
-	roboter.paint();
-	//skybox.SkyboxInit();
+	
 	//skybox.paint();
-	//koerper.paint(mass, farben);
+	//roboter.paint();
+	
+	GLUquadricObj *quadratic;
+	quadratic = gluNewQuadric();
+	glPushMatrix();
+	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+	glTranslatef(0.0f, 0.0f, -1.5f);
+	gluCylinder(quadratic, 0.2f, 0.2f, 1.5f, 32, 32);
+	glPopMatrix();
+	glScalef(10.0*mass, 0.1*mass, 10.0*mass);
+	Wuerfel(mass, farben[0], farben[1], farben[2], farben[3]);
 	glPopMatrix();
 	glutSwapBuffers();
 
@@ -110,7 +129,7 @@ void Reshape(int width, int height) {
 	glLoadIdentity(); //Ersetzt die aktuelle Matrix durch die Einheitsmatrix
 	glViewport(0, 0, width, height); //glViewport Beschreibt das aktuelle Betrachtungsfenster. 
 	//    glOrtho(-mass * 44.0, +mass * 44.0, -mass * 44.0, +mass * 44.0, 0.0, 14.0 * mass); // definiert das Frustum und die parameter sind wie folgt definiert (links, rechts, unten, oben, vodere und hintere begrenzung) 
-	gluPerspective(90.0, 1 , 0.1, 1130); // definiert das Frustum und die parameter sind wie folgt definiert (links, rechts, unten, oben, vodere und hintere begrenzung) 
+	gluPerspective(45.0, width/height , 0.001, 1130); // definiert das Frustum und die parameter sind wie folgt definiert (links, rechts, unten, oben, vodere und hintere begrenzung) 
 
 	glMatrixMode(GL_MODELVIEW); // Modellierungs/Viewing-Matrix
 
@@ -126,8 +145,7 @@ void Animate(int value) {
 	roboter.calculate();
 	glutPostRedisplay();
 	// Timer wieder registrieren - Animate wird so nach 100 msec mit value+=1 aufgerufen.
-
-	glutTimerFunc(5, Animate, ++value);
+	glutTimerFunc(animationUpdateInMS, Animate, ++value);
 
 
 
@@ -195,24 +213,24 @@ int main(int argc, char **argv) {
 	//steps.push_back(Animation(4,1,0.0,0.0,1.0,+90));
 	//animationen.push_back(steps);
 	//steps.clear();
-
-	roboter.init(mass, farben, animationen);
+	
 	menue();
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); //
-	glutInitWindowSize(600, 600); // Die Fenstergr��e wird initialisiert
-	glutCreateWindow("Gruppe 2 Freitag 4x");
+	glutInitWindowSize(width, height); // Die Fenstergr��e wird initialisiert
+	glutCreateWindow("Multi-Robot Motion Planning");
 	glutDisplayFunc(RenderScene);
 	glutReshapeFunc(Reshape);
-	// TimerCallback registrieren; wird nach 10 msec aufgerufen mit Parameter 0  
-	glutTimerFunc(166, Animate, 0);
+	
 	Init();
 
 	glutMouseFunc(MouseFunc); // Maus-Tasten und -Bewegung abfragen
 	glutMotionFunc(MouseMotion); // Maus-Bewegungen mit gedrückter Maus-Taste (AUS)
 	glutPassiveMotionFunc(PassivMouseMotion); // Maus-Bewegungen ohne gedrückte Maus-Taste (AUS)
 	glutSpecialFunc(SpecialFunc); // Funktion für Sondertasten (F1...F12++)
-
+	
+    // TimerCallback registrieren; wird nach 10 msec aufgerufen mit Parameter 0  
+	glutTimerFunc(animationUpdateInMS, Animate, 0);
 	glutMainLoop();
 	return 0;
 }
@@ -251,7 +269,6 @@ void MouseFunc(int button, int state, int x, int y) { // Maus-Tasten und -Bewegu
 	}
 }
 
-int zoomtmp=0;
 void MouseMotion(int x, int y) { // Maus-Bewegungen mit gedrückter Maus-Taste
 	if (keys.right && keys.left)
 	{	
@@ -273,7 +290,7 @@ void MouseMotion(int x, int y) { // Maus-Bewegungen mit gedrückter Maus-Taste
 	}
 	else if(keys.left)
 	{
-
+		
 		keys.pitch = (x - keys.xmouse);
 		keys.yaw = (y - keys.ymouse);
 		if(keys.pitch > 0)
@@ -298,13 +315,43 @@ void MouseMotion(int x, int y) { // Maus-Bewegungen mit gedrückter Maus-Taste
 
 void PassivMouseMotion(int x, int y) { // Maus-Bewegungen ohne gedrückte Maus-Taste
 	// wird nicht benutzt, zu hecktisch :)
+	/*
+	int mid_x = width >> 1;
+	int mid_y = height >> 1;
+	float angle_y = 0.0f;
+	float angle_z = 0.0f;
+
+	if ((x == mid_x) && (y == mid_y)) return;
+
+	SetCursorPos(mid_x, mid_y);	// Set the mouse cursor in the center of the window						
+
+	// Get the direction from the mouse cursor, set a resonable maneuvering speed
+	angle_y = (float)((mid_x - x)) / 100000;
+	angle_z = (float)((mid_y - y)) / 100000;
+
+	// The higher the value is the faster the camera looks around.
+	camera.yeye += angle_z * 1;
+
+	// limit the rotation around the x-axis
+	if ((camera.yeye - camera.ypos) > 8)  camera.yeye = camera.ypos + 8;
+	if ((camera.yeye - camera.ypos) <-8)  camera.yeye = camera.ypos - 8;
+
+	GLdouble x_, y_, z_;
+	x_ = camera.xeye - camera.xpos;
+	y_ = camera.yeye - camera.ypos;
+	z_ = camera.zeye - camera.zpos;
+
+	camera.zeye = (float)(camera.zpos + sin(-angle_y)* x_ + cos(-angle_y)* z_);
+	camera.xeye = (float)(camera.xpos + cos(-angle_y)* x_ - sin(-angle_y)* z_);
+	*/
 }
 
-GLdouble ev=0.0; // variable für den Einheitsvektor
-GLdouble h1=0.0;
-GLdouble vx=0.0, vy=0.0, vz=0.0; 
-GLdouble sv1x=0.0,sv1z=0.0, sv2x=0.0,sv2z=0.0; // hilfs variablen
+
 void SpecialFunc(int key, int x, int y) { // Funktions- und Pfeil-Tasten abfragen
+	GLdouble ev = 0.0; // variable für den Einheitsvektor
+	GLdouble h1 = 0.0;
+	GLdouble vx = 0.0, vy = 0.0, vz = 0.0;
+	GLdouble sv1x = 0.0, sv1z = 0.0, sv2x = 0.0, sv2z = 0.0; // hilfs variablen
 	switch (key) {
 	case GLUT_KEY_F1: // alles wird zurueckgesetzt
 		break;

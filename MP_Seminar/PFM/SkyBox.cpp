@@ -138,7 +138,8 @@ void SkyBox::SkyboxInit(void)
 {
 
 	//Kanten hervorheben
-	float sz=10.0f;
+	kanten = true;
+	float sz=1.0f;
 	glNewList (1, GL_COMPILE);    
 	glLineWidth(3);
 	glColor3f(1,1,1);
@@ -178,7 +179,7 @@ void SkyBox::SkyboxInit(void)
 	LoadGLTextures();
 
 	//Skybox anlegen
-	sz=10.0f;
+	sz=100.0f;
 	glNewList (2, GL_COMPILE);
 	glEnable(GL_TEXTURE_2D);
 
