@@ -118,7 +118,7 @@ bool Potential::update_box(Box obstacle[], Box robot[], int nObst)
 }
 
 /*************************************************************************************************************************/
-bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst)
+bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 {
 	Point robotPos = actPoint;
 	static int cnt = 0;
@@ -132,17 +132,17 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst
 
 		return true;
 	}
-	else if (cnt > 300)
+	else if (cnt > 10000)
 	{
 		cout << "That took way too long, abort!\n";
 		return true;
 	}
 
 	double sf_att = 1.;
-	double sf_rep = 1.;
+	double sf_rep = 5.;
 	double dist_goal = robotPos.Distance(goalPosition);
-	double d_star = 0.05;
-	double q_star = 0.04;
+	double d_star = 0.005;
+	double q_star = 0.004;
 
 	//quadratic pot.
 	double d2 = 0.5 * sf_att * pow(dist_goal, 2);
@@ -155,7 +155,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst
 	for (int i = 0; i < nObst; ++i)
 	{
 		Point point_obst;
-		double dist_obst = obstacle[i].distance(robot[0], &point_obst);
+		double dist_obst = obstacle[i].distance((*robot), &point_obst);
 		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();
 		if (abs(dist_obst) <= q_star)
 			d2_delta_rep_grad += force;
@@ -164,7 +164,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst
 	robotPos += d2_delta_rep_grad + d2_delta_att_grad;
 	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
 
-	robot[0].SetCenter(actPoint);
+	(*robot).SetCenter(actPoint);
 
 	return false;
 }
@@ -184,7 +184,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot,
 
 		return true;
 	}
-	else if (cnt > 5000)
+	else if (cnt > 10000)
 	{
 		cout << "That took way too long, abort!\n";
 		return true;

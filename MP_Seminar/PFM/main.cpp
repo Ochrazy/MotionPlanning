@@ -14,7 +14,7 @@
 using namespace std;
 
 
-bool check_local_minimum(vector<Point>, Point);
+bool check_local_minimum(vector<Point>, Point, int i);
 void MouseFunc(int, int, int, int); // Maus-Tasten und -Bewegung abfragen
 void MouseMotion(int, int); // Maus-Bewegungen mit gedrückter Maus-Taste
 void PassivMouseMotion(int, int); // Maus-Bewegungen ohne gedrückte Maus-Taste
@@ -51,15 +51,15 @@ void Init() {
 	//	Load_Texture(image3,2);									// Convert To A Texture
 	//	delete image3;											// Image Objekt loeschen
 
-	skybox.SkyboxInit();
-	roboter.init(mass, farben, animationen);
+	// skybox.SkyboxInit();
+	// roboter.init(mass, farben, animationen);
 
 	// Hindernisse initialisieren
 	// Hierbei wird für jedes Hinderniss die Größe ( Skalierung ) und die Position im Raum gesetzt
 	aHindernis[0].SetCenter(0., 0., 0.);  // outer bound
 	aHindernis[0].SetRadius(1.);
 
-	/*aHindernis[1].SetCenter(0.1, 0.1, 0.0);
+	aHindernis[1].SetCenter(0.1, 0.1, 0.0);
 	aHindernis[1].SetRadius(0.1);
 
 	aHindernis[2].SetCenter(0.5, 0.1, 0.0);
@@ -67,10 +67,10 @@ void Init() {
 
 	aHindernis[3].SetCenter(0.3, 0.34, 0.0);
 	aHindernis[3].SetRadius(0.1);
-	*/
+	
 	for (int i = 0; i < nRob; ++i)
 	{
-		radius[i] = 0.2;
+		radius[i] = 1.2;
 		roboterPot[i].SetRadius(radius[i]);
 
 		quadratic[i] = gluNewQuadric();
@@ -93,15 +93,11 @@ void Init() {
 			pot[i].setStartPosition(-4.5, 4.5);
 			pot[i].setGoalPosition(4.5, -4.5);
 		}
-
+		total_counter[i] = 0;
 		roboterPot[i].SetCenter(pot[i].getStartPosition());
 		pot[i].setActPoint(pot[i].getStartPosition());
 		path[i].push_back(pot[i].getStartPosition());
 	}
-	
-	
-
-
 }
 
 void RenderScene(void) {
@@ -131,14 +127,14 @@ void RenderScene(void) {
 	glPopMatrix();
 
 	glPushMatrix();
-		glColor4f(farben[0], farben[1], farben[2], farben[3]);
+		glColor4f(farben[12], farben[13], farben[14], farben[15]);
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 		glTranslatef(robPos[2].x, robPos[2].y, -0.5f);
 		gluCylinder(quadratic[0], 0.2f, 0.2f, 0.55f, 32, 32);
 	glPopMatrix();
 
 	glPushMatrix();
-		glColor4f(farben[8], farben[9], farben[10], farben[11]);
+		glColor4f(farben[16], farben[17], farben[18], farben[19]);
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 		glTranslatef(robPos[3].x, robPos[3].y, -0.5f);
 		gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
@@ -179,10 +175,22 @@ void Animate(int value) {
 		if (!goal_reached[i] && !local_minimum_reached[i])
 		//if (!goal_reached && !local_minimum_reached)
 		{
-			goal_reached[i] = pot[i].update_cylinder_navigation(aHindernis, &(roboterPot[i]), 0);
-			robPos[i] = pot[i].getRobPos();
-			roboterPot[i].Translate(robPos[i].x, robPos[i].y, robPos[i].z);
-			local_minimum_reached[i] = check_local_minimum(path[i], robPos[i]);
+			Cylinder obstacles[nHind];
+			int count = 0;
+			for (int j = 0; j < nRob; ++j)
+			{
+				if (j != i){
+					obstacles[count] = roboterPot[j];
+					//obstacles[count].SetCenter(robPos[j].x, robPos[j].y, robPos[j].z);
+					++count;
+				}
+			}
+
+			goal_reached[i] = pot[i].update_cylinder_navigation(obstacles, &(roboterPot[i]), nHind);
+			robPos[i] = roboterPot[i].GetCenter();
+			//robPos[i] = pot[i].getRobPos();
+			//roboterPot[i].SetCenter(robPos[i].x, robPos[i].y, robPos[i].z);
+			local_minimum_reached[i] = check_local_minimum(path[i], robPos[i], i);
 			path[i].push_back(pot[i].getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
 			cout << "Robot " << i << ": " << robPos[i].x << " " << robPos[i].y << endl; // Ausgabe auf Konsole
 
@@ -283,17 +291,17 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-bool check_local_minimum(vector<Point> path, Point act)
+bool check_local_minimum(vector<Point> path, Point act, int i)
 {
-	/*static int total_counter = 0;
-	if (total_counter > 20)
-		if (act.Distance(path[total_counter - 20]) < 0.003)
+	
+	if (total_counter[i] > 20)
+		if (act.Distance(path[total_counter[i] - 20]) < 0.003)
 		{
 			return true;
 		}
 
-	total_counter++;
-*/
+	total_counter[i]++;
+
 	return false;
 }
 

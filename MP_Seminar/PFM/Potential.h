@@ -31,7 +31,7 @@ public:
     bool goalReached(Point robotPos, Point goalPos, double distError);
 
     bool update_box(Box obstacle[], Box robot[], int nObst);
-    bool update_cylinder(Cylinder obstacle[], Cylinder robot[], int nObst);
+    bool update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst);
     bool update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot, int nObst);
 };
 

@@ -13,8 +13,8 @@
 #include "Potential.h"
 
 const int nRob = 4;     // Anzahl der Roboterglieder
-const int nHind = 2;    // Anzahl der Hindernisse
-
+const int nHind = 0 + nRob -1;    // Anzahl der Hindernisse
+int total_counter[nRob];
 
 
 Roboter roboter;
