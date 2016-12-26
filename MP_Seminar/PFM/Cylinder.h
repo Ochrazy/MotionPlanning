@@ -16,6 +16,8 @@ public:
 	void SetCenter(double x, double y, double z); // sets the origin of box to x,y,z
 	void SetRadius(const double pr);
 	double GetRadius(void);
+	void SetRepulsivness(double rep);
+	double GetRepulsivness(void);
 	void Translate(double x, double y, double z); // translates the box with coordinates x,y,z
 	void Translate(Point p);
 
@@ -30,5 +32,6 @@ protected:
 	double r, h;                // radius and height of cylinder
 								//Point lowestDistancePoint;  // Point with the lowest distance to the robot
 								//Point lowestDistanceVector; // Vector from the lowest distance point to the robot lowest distance point
+	double repulsivness;
 };
 

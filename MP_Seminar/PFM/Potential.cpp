@@ -139,7 +139,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 	}
 
 	double sf_att = 1.;
-	double sf_rep = 5.;
+
 	double dist_goal = robotPos.Distance(goalPosition);
 	double d_star = 0.005;
 	double q_star = 0.004;
@@ -154,6 +154,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 	//repulsive pot.
 	for (int i = 0; i < nObst; ++i)
 	{
+		double sf_rep = obstacle[i].GetRepulsivness();
 		Point point_obst;
 		double dist_obst = obstacle[i].distance((*robot), &point_obst);
 		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();

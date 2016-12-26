@@ -90,3 +90,12 @@ void Cylinder::Translate(double x, double y, double z)
 	center.y += y;
 	center.z += z;
 }
+
+void Cylinder::SetRepulsivness(double rep)
+{
+	repulsivness = rep;
+}
+double Cylinder::GetRepulsivness(void)
+{
+	return repulsivness;
+}

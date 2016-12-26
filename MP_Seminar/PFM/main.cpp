@@ -70,7 +70,7 @@ void Init() {
 	
 	for (int i = 0; i < nRob; ++i)
 	{
-		radius[i] = 1.2;
+		radius[i] = 0.2;
 		roboterPot[i].SetRadius(radius[i]);
 
 		quadratic[i] = gluNewQuadric();
@@ -82,16 +82,20 @@ void Init() {
 		if(i == 0){
 			pot[i].setStartPosition(4.5, 4.5);
 			pot[i].setGoalPosition(-4.5, -4.5);
+			roboterPot[i].SetRepulsivness(1);
 		}else if (i == 1) {
 			pot[i].setStartPosition(-4.5, -4.5);
 			pot[i].setGoalPosition(4.5, 4.5);
+			roboterPot[i].SetRepulsivness(5);
 		}else if (i == 2) {
 			pot[i].setStartPosition(4.5, -4.5);
 			pot[i].setGoalPosition(-4.5, 4.5);
+			roboterPot[i].SetRepulsivness(10);
 		}
 		else if (i == 3) {
 			pot[i].setStartPosition(-4.5, 4.5);
 			pot[i].setGoalPosition(4.5, -4.5);
+			roboterPot[i].SetRepulsivness(15);
 		}
 		total_counter[i] = 0;
 		roboterPot[i].SetCenter(pot[i].getStartPosition());
@@ -186,7 +190,7 @@ void Animate(int value) {
 				}
 			}
 
-			goal_reached[i] = pot[i].update_cylinder_navigation(obstacles, &(roboterPot[i]), nHind);
+			goal_reached[i] = pot[i].update_cylinder(obstacles, &(roboterPot[i]), nHind);
 			robPos[i] = roboterPot[i].GetCenter();
 			//robPos[i] = pot[i].getRobPos();
 			//roboterPot[i].SetCenter(robPos[i].x, robPos[i].y, robPos[i].z);
