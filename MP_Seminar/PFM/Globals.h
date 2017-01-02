@@ -11,22 +11,23 @@
 #include "Cylinder.h"
 #include "Point.h"
 #include "Potential.h"
+#include "Program.h"
 
 const int nRob = 4;     // Anzahl der Roboterglieder
 const int nHind = 0 + nRob -1;    // Anzahl der Hindernisse
 int total_counter[nRob];
 
-
 Roboter roboter;
 Wuerfel box;
 SkyBox skybox;
-vector<vector<Animation> > animationen;
+
+enum class Algorithm {PotentialFieldMethod, RRTConnect} currentAlgorithm;
+Program* inputProgram;
 
 int animationUpdateInMS = 16;
 int width = 1024, height = 768;
 GLfloat mass = 1.0; // Mass fuer die Ausdehnung des Modells
 
-GLUquadricObj *quadratic[nRob];
 Point robPos[nRob];
 bool goal_reached[nRob];
 bool local_minimum_reached[nRob];
@@ -55,7 +56,7 @@ struct Camera {
 	GLdouble xpos, ypos, zpos, xrot, yrot, angle, xeye, yeye, zeye, lux, luy, luz;
 	void camera()
 	{
-		xpos = 0, ypos = 10, zpos = 15, xrot = 0, yrot = 0, angle = 0, xeye = 0, yeye = 0, zeye = 0, lux = 0, luy = 1, luz = 0;
+		xpos = 0.5, ypos = 0.5, zpos = 2, xrot = 0, yrot = 0, angle = 0, xeye = 0.5, yeye = 0.5, zeye = 0, lux = 0, luy = 1, luz = 0;
 	}
 } camera;
 

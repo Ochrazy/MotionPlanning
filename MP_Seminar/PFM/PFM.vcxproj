@@ -146,6 +146,7 @@
     <ClCompile Include="Oberkoerper.cpp" />
     <ClCompile Include="Oberschenkel.cpp" />
     <ClCompile Include="Potential.cpp" />
+    <ClCompile Include="Program.cpp" />
     <ClCompile Include="Roboter.cpp" />
     <ClCompile Include="SkyBox.cpp" />
     <ClCompile Include="Unterarm.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Oberschenkel.h" />
     <ClInclude Include="Point.h" />
     <ClInclude Include="Potential.h" />
+    <ClInclude Include="Program.h" />
     <ClInclude Include="Roboter.h" />
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="Unterarm.h" />
