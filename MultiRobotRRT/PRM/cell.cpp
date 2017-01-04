@@ -48,7 +48,7 @@ void write_easyrob_program_file(std::vector<Eigen::VectorXd> path, std::string f
     myfile.open(filename);
     myfile << "ProgramFile" << std::endl;
 
-    for (int i = (int)path.size() - 1; i >= 0; --i)
+    for (int i = 0; i < (int)path.size(); i++)
     {
         if (jump_to)
             myfile << "JUMP_TO_AX ";

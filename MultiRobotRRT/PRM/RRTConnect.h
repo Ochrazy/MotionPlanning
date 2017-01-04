@@ -48,6 +48,7 @@ private:
 	// Path
 	std::vector<Eigen::VectorXd> RRTConnect::calculateShortestPath(int startIndex, int goalIndex, graph_t& g);
 	void refinePath(std::vector<Eigen::VectorXd>& path);
+	std::vector<Eigen::VectorXd> convertCDPath(std::vector<Eigen::VectorXd> path);
 };
 
 #include "RRTConnect.inl"

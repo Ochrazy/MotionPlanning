@@ -137,6 +137,29 @@ void RRTConnect<_ROBOT_TYPE>::refinePath(std::vector<Eigen::VectorXd>& path)
 }
 
 template<typename _ROBOT_TYPE>
+std::vector<Eigen::VectorXd>  RRTConnect<_ROBOT_TYPE>::convertCDPath(std::vector<Eigen::VectorXd> path)
+{
+	std::vector<Eigen::VectorXd> newPath;
+	for (unsigned int current = 0; current < path.size(); current++)
+	{
+		std::vector<Eigen::VectorXd> realPath = cell.convertToRealPosition(path[current]);
+		size_t sizeOfVector = realPath[0].size() + realPath.size();
+		Eigen::VectorXd q(sizeOfVector);
+
+		int index = 0;
+		for (size_t i = 0; i < realPath.size(); i++)
+			for (int x = 0; x < realPath[i].size(); x++)
+			{
+				q[index] = realPath[i][x];
+				index++;
+			}
+
+		newPath.push_back(q);
+	}
+	return newPath;
+}
+
+template<typename _ROBOT_TYPE>
 std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::VectorXd qStart, Eigen::VectorXd qGoal)
 {
 	MultiRobotRtree rtree;
@@ -147,6 +170,8 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 
 	int solutionIndex = -1;
 	int solutionIndexB = -1;
+
+	int swapCounter = 0;
 
 	// Maximum number of Nodes
 	const int nNodes = 10000;
@@ -263,6 +288,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 				{
 					g.swap(gb);
 					rtree.swap(rtreeB);
+					swapCounter++;
 				}
 			}
 		}
@@ -287,7 +313,9 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 		}
 		// Refine Path
 		refinePath(path);
-		//reverse(pathG.begin(), pathG.end());
+		if(bIsCoordinationDiagram)
+			path = convertCDPath(path);
+
 		std::cout << "Path size of Refined Graph: " << path.size() << std::endl;
 	}
 	else std::cout << "No solution found!" << std::endl;

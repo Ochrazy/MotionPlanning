@@ -73,6 +73,8 @@ public:
     Eigen::VectorXd NextRandomCfree();
     void ResetRNG();
 
+	std::vector<Eigen::VectorXd>  convertToRealPosition(Eigen::VectorXd q);
+
     _ROBOT_TYPE& Robot() { return robot_; }
 
 protected:
@@ -88,7 +90,6 @@ protected:
 	// Coordination Diagram
 	std::vector<std::vector<Eigen::VectorXd>> cdPaths;
 	std::vector<std::vector<double>> cdPathLengths;
-	std::vector<Eigen::VectorXd>  convertToRealPosition(Eigen::VectorXd q);
 
     std::mt19937_64 rng_; // Random Number Generator
     std::uniform_real_distribution<double> unif_;

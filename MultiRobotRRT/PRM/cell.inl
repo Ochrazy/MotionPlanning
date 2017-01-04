@@ -18,11 +18,14 @@ Cell<_ROBOT_TYPE, _CELL_TYPE>::Cell(std::vector<std::vector<Eigen::VectorXd>> in
 	for (size_t i = 0; i < cdPaths.size(); i++)
 	{
 		std::vector<double> pathLengths;
+		double totalLength = 0;
 		for (size_t x = 0; x < cdPaths[i].size()-1; x++)
 		{
 			double length = (cdPaths[i][x] - cdPaths[i][x+1]).norm();
+			totalLength += length;
 			pathLengths.push_back(length);
 		}
+		pathLengths.push_back(totalLength);
 		cdPathLengths.push_back(pathLengths);
 	}
 }
@@ -68,10 +71,10 @@ template<typename _ROBOT_TYPE, typename _CELL_TYPE>
 std::vector<Eigen::VectorXd> Cell<_ROBOT_TYPE, _CELL_TYPE>::convertToRealPosition(Eigen::VectorXd q)
 {
 	std::vector<Eigen::VectorXd> newQs;
-	for (size_t robot = 0; robot < q.size(); robot++)
+	for (int robot = 0; robot < q.size(); robot++)
 	{
-		double lengthToGo = q[robot];
-		for (size_t lengths = 0; lengths < cdPathLengths[robot].size(); lengths++)
+		double lengthToGo = q[robot] * cdPathLengths[robot][cdPathLengths[robot].size()-1];
+		for (size_t lengths = 0; lengths < cdPathLengths[robot].size()-1; lengths++)
 		{
 			lengthToGo -= cdPathLengths[robot][lengths];
 			if (lengthToGo <= 0.0)
@@ -87,7 +90,7 @@ std::vector<Eigen::VectorXd> Cell<_ROBOT_TYPE, _CELL_TYPE>::convertToRealPositio
 		}
 		if (lengthToGo > 0.0)
 		{
-			int lengths = cdPathLengths[robot].size() - 1;
+			int lengths = (int)cdPathLengths[robot].size() - 1;
 			Eigen::VectorXd dir = cdPaths[robot][lengths] - cdPaths[robot][lengths + 1];
 			dir.normalize();
 			Eigen::VectorXd b = cdPaths[robot][lengths + 1];
