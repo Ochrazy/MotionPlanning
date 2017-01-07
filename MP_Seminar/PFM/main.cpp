@@ -80,21 +80,21 @@ void Init() {
 
 		// Initialize start, goal, actPoint and heading
 		if(i == 0){
-			pot[i].setStartPosition(4.5, 4.5);
-			pot[i].setGoalPosition(-4.5, -4.5);
+			pot[i].setStartPosition(3.5, 3.5);
+			pot[i].setGoalPosition(-3.5, -3.5);
 			roboterPot[i].SetRepulsivness(1);
 		}else if (i == 1) {
-			pot[i].setStartPosition(-4.5, -4.5);
-			pot[i].setGoalPosition(4.5, 4.5);
+			pot[i].setStartPosition(-3.5, -3.5);
+			pot[i].setGoalPosition(3.5, 3.5);
 			roboterPot[i].SetRepulsivness(5);
 		}else if (i == 2) {
-			pot[i].setStartPosition(4.5, -4.5);
-			pot[i].setGoalPosition(-4.5, 4.5);
+			pot[i].setStartPosition(3.5, -3.5);
+			pot[i].setGoalPosition(-3.5, 3.5);
 			roboterPot[i].SetRepulsivness(10);
 		}
 		else if (i == 3) {
-			pot[i].setStartPosition(-4.5, 4.5);
-			pot[i].setGoalPosition(4.5, -4.5);
+			pot[i].setStartPosition(-3.5, 3.5);
+			pot[i].setGoalPosition(3.5, -3.5);
 			roboterPot[i].SetRepulsivness(15);
 		}
 		total_counter[i] = 0;
@@ -298,8 +298,8 @@ int main(int argc, char **argv) {
 bool check_local_minimum(vector<Point> path, Point act, int i)
 {
 	
-	if (total_counter[i] > 20)
-		if (act.Distance(path[total_counter[i] - 20]) < 0.003)
+	if (total_counter[i] > 200)
+		if (act.Distance(path[total_counter[i] - 200]) < 0.003)
 		{
 			return true;
 		}

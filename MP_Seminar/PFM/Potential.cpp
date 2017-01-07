@@ -141,8 +141,8 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 	double sf_att = 1.;
 
 	double dist_goal = robotPos.Distance(goalPosition);
-	double d_star = 0.005;
-	double q_star = 0.004;
+	double d_star = 0.2;
+	double q_star = 0.2;
 
 	//quadratic pot.
 	double d2 = 0.5 * sf_att * pow(dist_goal, 2);
@@ -150,7 +150,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 	Point d2_delta_att_grad = sf_att * (robotPos - goalPosition);
 
 	Point d2_delta_rep_grad(0.,0.,0.);
-
+	double min_dist_obst = std::numeric_limits<double>::max();;
 	//repulsive pot.
 	for (int i = 0; i < nObst; ++i)
 	{
@@ -158,8 +158,10 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 		Point point_obst;
 		double dist_obst = obstacle[i].distance((*robot), &point_obst);
 		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();
-		if (abs(dist_obst) <= q_star)
-			d2_delta_rep_grad += force;
+		if (abs(dist_obst) <= q_star && dist_obst < min_dist_obst){
+			d2_delta_rep_grad = force;
+			min_dist_obst = dist_obst;
+		}
 	}
 
 	robotPos += d2_delta_rep_grad + d2_delta_att_grad;
