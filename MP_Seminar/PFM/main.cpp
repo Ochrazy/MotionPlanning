@@ -7,12 +7,12 @@
 #define _USE_MATH_DEFINES
 
 #include <cmath>
-#include <iostream>      
+#include <iostream>   
+#include <fstream>
 #include <Windows.h>
 #include "Globals.h"
 
 using namespace std;
-
 
 bool check_local_minimum(vector<Point>, Point, int i);
 void MouseFunc(int, int, int, int); // Maus-Tasten und -Bewegung abfragen
@@ -34,12 +34,16 @@ void Init() {
 	GLfloat mat_specular[] = {0.5f, 0.5f, 0.5f, 0.5f}; // Array fuer Glanz-Richtung
 	GLfloat mat_shininess[] = {50.0f}; // Array fuer die Leucht-Intensitaet
 	GLfloat white_light[] = {1.0f, 1.0f, 1.0f, 1.0f}; // Array fuer die Farbe des Lichts
-	GLfloat ambientLight[] = {1.0f, 1.0f, 1.0f, 0.0f}; // Array fuer die Farbe des Ambient-Lichts
+	GLfloat ambientLight[] = {0.05f, 0.05f, 0.05f, 0.0f}; // Array fuer die Farbe des Ambient-Lichts
 	glLightfv(GL_LIGHT0, GL_SPECULAR, white_light); // Farbe und Art des Licht an die Lichtquelle binden
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light); // Farbe und Art des Licht an die Lichtquelle binden
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular); // Farbe und Art des Licht an das Material binden
 	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess); // Farbe und Art des Licht an das Material binden
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight); // Farbe und Art des Licht an die Scene binden
+	GLfloat lightpos[] = { 0.125, 0.25, 1., 0. };
+	glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+	glShadeModel(GL_FLAT);
+
 	//	glGenTextures(2, texture_id);							// Create Two Textures / Textur-Namen anlegen
 	//	Image *image1 = Load_BMP("erde_texture.bmp");			// BMP-Bild laden, prüfen und Bitmap erzeugen
 	//    Load_Texture(image1,0);									// Convert To A Texture
@@ -70,32 +74,30 @@ void Init() {
 	
 	for (int i = 0; i < nRob; ++i)
 	{
-		radius[i] = 0.2;
+		radius[i] = 0.05;
 		roboterPot[i].SetRadius(radius[i]);
-
-		quadratic[i] = gluNewQuadric();
 
 		goal_reached[i] = false;
 		local_minimum_reached[i] = false;
 
 		// Initialize start, goal, actPoint and heading
 		if(i == 0){
-			pot[i].setStartPosition(3.5, 3.5);
-			pot[i].setGoalPosition(-3.5, -3.5);
-			roboterPot[i].SetRepulsivness(1);
+			pot[i].setStartPosition(1.0, 1.0);
+			pot[i].setGoalPosition(0.0, 0.0);
+			roboterPot[i].SetRepulsivness(100);
 		}else if (i == 1) {
-			pot[i].setStartPosition(-3.5, -3.5);
-			pot[i].setGoalPosition(3.5, 3.5);
-			roboterPot[i].SetRepulsivness(5);
+			pot[i].setStartPosition(0.0, 0.0);
+			pot[i].setGoalPosition(1.0, 1.0);
+			roboterPot[i].SetRepulsivness(500);
 		}else if (i == 2) {
-			pot[i].setStartPosition(3.5, -3.5);
-			pot[i].setGoalPosition(-3.5, 3.5);
-			roboterPot[i].SetRepulsivness(10);
+			pot[i].setStartPosition(1.0, 0.0);
+			pot[i].setGoalPosition(0.0, 1.0);
+			roboterPot[i].SetRepulsivness(1000);
 		}
 		else if (i == 3) {
-			pot[i].setStartPosition(-3.5, 3.5);
-			pot[i].setGoalPosition(3.5, -3.5);
-			roboterPot[i].SetRepulsivness(15);
+			pot[i].setStartPosition(0.0, 1.0);
+			pot[i].setGoalPosition(1.0, 0.0);
+			roboterPot[i].SetRepulsivness(2000);
 		}
 		total_counter[i] = 0;
 		roboterPot[i].SetCenter(pot[i].getStartPosition());
@@ -104,7 +106,8 @@ void Init() {
 	}
 }
 
-void RenderScene(void) {
+void RenderScene(void) 
+{
 	// Hier befindet sich der Code der in jedem frame ausgefuehrt werden muss
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Puffer loeschen
 	glLoadIdentity(); //Ersetzt die aktuelle Matrix durch die Einheitsmatrix
@@ -116,36 +119,59 @@ void RenderScene(void) {
 	//skybox.paint();
 	//roboter.paint();
 	
-	glPushMatrix();
+	if (currentAlgorithm == Algorithm::RRTConnect)
+	{
+		glPushMatrix();
+		glColor4f(1., 0., 0., 1.);
+		glTranslatef(robPos[0].x, robPos[0].y, 0.f);
+		glTranslatef(0.05, 0.025, 0.0);
+		glScalef(0.1, 0.05, 0.05);
+		glutSolidCube(1.f);
+		glPopMatrix();
+
+		glPushMatrix();
+		glColor4f(0., 0., 1., 1.);
+		glTranslatef(robPos[1].x, robPos[1].y, 0.f);
+		glTranslatef(0.05, 0.025, 0.0);
+		glScalef(0.1, 0.05, 0.05);
+		glutSolidCube(1.f);
+		glPopMatrix();
+	}
+	else if (currentAlgorithm == Algorithm::PotentialFieldMethod)
+	{
+		glPushMatrix();
 		glColor4f(farben[0], farben[1], farben[2], farben[3]);
-		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-		glTranslatef(robPos[0].x, robPos[0].y, -0.5f);
-		gluCylinder(quadratic[0], 0.2f, 0.2f, 0.55f, 32, 32);
-	glPopMatrix();
+		glTranslatef(robPos[0].x, robPos[0].y, 0.f);
+		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
 
-	glPushMatrix();
+		glPushMatrix();
 		glColor4f(farben[8], farben[9], farben[10], farben[11]);
-		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-		glTranslatef( robPos[1].x, robPos[1].y, -0.5f);
-		gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
-	glPopMatrix();
+		glTranslatef(robPos[1].x, robPos[1].y, 0.f);
+		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
 
-	glPushMatrix();
+		glPushMatrix();
 		glColor4f(farben[12], farben[13], farben[14], farben[15]);
-		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-		glTranslatef(robPos[2].x, robPos[2].y, -0.5f);
-		gluCylinder(quadratic[0], 0.2f, 0.2f, 0.55f, 32, 32);
-	glPopMatrix();
+		glTranslatef(robPos[2].x, robPos[2].y, 0.f);
+		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
 
-	glPushMatrix();
+		glPushMatrix();
 		glColor4f(farben[16], farben[17], farben[18], farben[19]);
-		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-		glTranslatef(robPos[3].x, robPos[3].y, -0.5f);
-		gluCylinder(quadratic[1], 0.2f, 0.2f, 0.55f, 32, 32);
+		glTranslatef(robPos[3].x, robPos[3].y, 0.f);
+		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
+	}
+
+	// 
+	glPushMatrix();
+	glColor4f(0.f, 1.f, 0.f, 1.f);
+	glTranslatef(0.5f, 0.5f, 0.f);
+	glScalef(1., 1., 0.0);
+	glutWireCube(1.f);
 	glPopMatrix();
 
-	glScalef(10.0, 0.1, 10.0);
-	Wuerfel(mass, farben[4], farben[5], farben[6], farben[7]);
 	glPopMatrix();
 	glutSwapBuffers();
 
@@ -213,66 +239,54 @@ void Animate(int value) {
 }
 
 
-/* Szenengraph
-*	0.) Roboter
-*	1.)	Körper+Kopf+Arme
-*	2.) Kopf
-*	3.) Linker Arm
-*	4.) Linker Unterarm + Linke Hand
-*	5.) Linke Hand
-*	6.) Rechter Arm
-*	7.) Rechter Unterarmv+ Rechte Hand
-*	8.) Rechte Hand
-*	9.) Linkes Bein
-*	10.) Linker Unterschenkel + Linker Fuss
-*	11.) Linker Fuss
-*	12.) Rechtes Bein
-*	13.) Rechter Unterschenkel + Rechter Fuss
-*	14.) Rechter Fuss
-*
-*	Parameter Linke Seite = 1 Rechte Seite = 0
-*	Parameter Translation = 0 Rotation = 0
-*
-*/
+void AnimateProgram(int value) 
+{
+	// Startzeit
+	DWORD dwStart = GetTickCount();
+	
+	static int waypointIndex = 0;
+	static int steps = 0;
+	static double timeInSecons = 3.0;
 
+	Point startWaypoint(inputProgram->program[waypointIndex].front().x, inputProgram->program[waypointIndex].front().y, 0.);
+	Point endWaypoint(inputProgram->program[waypointIndex + 1].front().x, inputProgram->program[waypointIndex + 1].front().y, 0.);
+	Point direction = (endWaypoint - startWaypoint).Normalize();
+	double lengthStep = startWaypoint.Distance(endWaypoint) * (animationUpdateInMS / 1000.0);
+	robPos[0] = startWaypoint + direction * (lengthStep/ timeInSecons) * steps;
+
+	// second robot
+	Point startWaypoint2(inputProgram->program[waypointIndex].back().x, inputProgram->program[waypointIndex].back().y, 0.);
+	Point endWaypoint2(inputProgram->program[waypointIndex + 1].back().x, inputProgram->program[waypointIndex + 1].back().y, 0.);
+	Point direction2 = (endWaypoint2 - startWaypoint2).Normalize();
+	double lengthStep2 = startWaypoint2.Distance(endWaypoint2) * (animationUpdateInMS / 1000.0);
+	robPos[1] = startWaypoint2 + direction2 * (lengthStep2/ timeInSecons) * steps;
+
+	steps++;
+	static int maxSteps = (1.0 / (animationUpdateInMS / 1000.0));
+	if (steps > (maxSteps*timeInSecons))
+	{
+		steps = 0;
+		waypointIndex++;
+		if (waypointIndex > inputProgram->program.size()-2)
+			waypointIndex = 0;
+	}
+
+	/*robPos[0] = Point(0.0, 0.0, 0.0);
+	robPos[1] = Point(0.0, 0.05, 0.0);*/
+
+	cout << "Robot : " << robPos[0].x << " " << robPos[0].y << " " << robPos[1].x << " " << robPos[1].y << endl; // Ausgabe auf Konsole
+
+	// Zeit für das Aufstellen des Konfigurationsraumes ausgeben ( in ms )
+	DWORD dwElapsed = GetTickCount() - dwStart;
+	printf("\nBerechnung dauerte %d ms\n", dwElapsed);
+	glutPostRedisplay();
+	// Timer wieder registrieren - Animate wird so nach 100 msec mit value+=1 aufgerufen.
+	glutTimerFunc(animationUpdateInMS, AnimateProgram, ++value);
+}
 
 int main(int argc, char **argv) {
 	camera.camera();
 	keys.keys();
-
-	vector<Animation> steps;
-	steps.push_back(Animation(0, 0, 0.0, 5.0, 0.0, 0.0));
-	steps.push_back(Animation(0, 1, 0.0, 1.0, 0.0, 180.0));
-	steps.push_back(Animation(3, 1, 0.0, 0.0, 1.0, -90.0));
-	steps.push_back(Animation(6, 1, 0.0, 0.0, 1.0, +90.0));
-	animationen.push_back(steps);
-	steps.clear();
-	//steps.push_back(Animation(6,1,0.0,0.0,1.0,45));
-	//steps.push_back(Animation(7,1,0.0,0.0,1.0,-45));
-	//steps.push_back(Animation(3,1,0.0,0.0,1.0,-45));
-	//steps.push_back(Animation(4,1,0.0,0.0,1.0,+45));
-	//animationen.push_back(steps);
-	//steps.clear();
-	//steps.push_back(Animation(6,1,0.0,0.0,1.0,90));
-	//steps.push_back(Animation(7,1,0.0,0.0,1.0,-90));
-	//steps.push_back(Animation(3,1,0.0,0.0,1.0,-90));
-	//steps.push_back(Animation(4,1,0.0,0.0,1.0,+90));
-	//animationen.push_back(steps);
-	//steps.clear();
-	//steps.push_back(Animation(7,1,0.0,0.0,1.0,0));
-	//steps.push_back(Animation(4,1,0.0,0.0,1.0,0));
-	//animationen.push_back(steps);
-	//steps.clear();
-	//steps.push_back(Animation(0,1,0.0,1.0,0.0,180));
-	//animationen.push_back(steps);
-	//steps.clear();
-	//steps.push_back(Animation(0,1,0.0,1.0,0.0,360));
-	//steps.push_back(Animation(6,1,0.0,0.0,1.0,90));
-	//steps.push_back(Animation(7,1,0.0,0.0,1.0,-90));
-	//steps.push_back(Animation(3,1,0.0,0.0,1.0,-90));
-	//steps.push_back(Animation(4,1,0.0,0.0,1.0,+90));
-	//animationen.push_back(steps);
-	//steps.clear();
 	
 	menue();
 	glutInit(&argc, argv);
@@ -289,8 +303,45 @@ int main(int argc, char **argv) {
 	glutPassiveMotionFunc(PassivMouseMotion); // Maus-Bewegungen ohne gedrückte Maus-Taste (AUS)
 	glutSpecialFunc(SpecialFunc); // Funktion für Sondertasten (F1...F12++)
 
+	// Debug command line argument (rrt):
+	/*argc = 2;
+	argv[1] = "rrt.prg";*/
+
+	// Load program
+	if (argc > 1)
+	{
+		inputProgram = new Program();
+		currentAlgorithm = Algorithm::RRTConnect;
+		std::ifstream file;
+		file.open("rrt.prg");
+
+		std::string input;
+		file >> input; // "ProgramFile"
+
+		while (!file.eof())
+		{
+			file >> input; // "PTP_AX "
+			if (input.compare("EndProgramFile") == 0)
+				break;
+
+			// 2 Robots
+			Point2D point;
+			Point2D secondPoint;
+			file >> point.x >> point.y >> secondPoint.x >> secondPoint.y;
+			vector<Point2D> prog;
+			prog.push_back(point);
+			prog.push_back(secondPoint);
+			inputProgram->program.push_back(prog);
+		}
+		file.close();
+	}
+	else
+		currentAlgorithm = Algorithm::PotentialFieldMethod;
+
     // TimerCallback registrieren; wird nach animationUpdateInMS aufgerufen mit Parameter 0 für Frame 0
-	glutTimerFunc(animationUpdateInMS, Animate, 0);
+	if (currentAlgorithm == Algorithm::RRTConnect)
+		glutTimerFunc(animationUpdateInMS, AnimateProgram, 0);
+	else glutTimerFunc(animationUpdateInMS, Animate, 0);
 	glutMainLoop();
 	return 0;
 }
