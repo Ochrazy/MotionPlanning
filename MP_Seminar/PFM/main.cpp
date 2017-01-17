@@ -6,9 +6,7 @@
 
 #define _USE_MATH_DEFINES
 
-#include <cmath>
-#include <iostream>   
-#include <fstream>
+
 #include <Windows.h>
 #include "Globals.h"
 
@@ -60,18 +58,43 @@ void Init() {
 
 	// Hindernisse initialisieren
 	// Hierbei wird für jedes Hinderniss die Größe ( Skalierung ) und die Position im Raum gesetzt
-	aHindernis[0].SetCenter(0., 0., 0.);  // outer bound
-	aHindernis[0].SetRadius(1.);
-
-	aHindernis[1].SetCenter(0.1, 0.1, 0.0);
-	aHindernis[1].SetRadius(0.1);
-
-	aHindernis[2].SetCenter(0.5, 0.1, 0.0);
-	aHindernis[2].SetRadius(0.1);
-
-	aHindernis[3].SetCenter(0.3, 0.34, 0.0);
-	aHindernis[3].SetRadius(0.1);
+	if(true){
 	
+		aHindernis[0].SetCenter(0.4, 0.4, 0.);  // outer bound
+	aHindernis[0].SetRadius(0.05);
+	aHindernis[0].SetRepulsivness(20);
+
+	aHindernis[1].SetCenter(0.4, 0.6, 0.0);
+	aHindernis[1].SetRadius(0.05);
+	aHindernis[1].SetRepulsivness(20);
+
+	aHindernis[2].SetCenter(0.6, 0.4, 0.0);
+	aHindernis[2].SetRadius(0.05);
+	aHindernis[2].SetRepulsivness(20);
+
+	aHindernis[3].SetCenter(0.6, 0.6, 0.0);
+	aHindernis[3].SetRadius(0.05);
+	aHindernis[3].SetRepulsivness(20);
+
+	}else{
+
+	aHindernis[0].SetCenter(0.5, 0.3, 0.);  // outer bound
+	aHindernis[0].SetRadius(0.05);
+	aHindernis[0].SetRepulsivness(20);
+
+	aHindernis[1].SetCenter(0.5, 0.7, 0.0);
+	aHindernis[1].SetRadius(0.05);
+	aHindernis[1].SetRepulsivness(20);
+
+	aHindernis[2].SetCenter(0.7, 0.5, 0.0);
+	aHindernis[2].SetRadius(0.05);
+	aHindernis[2].SetRepulsivness(20);
+
+	aHindernis[3].SetCenter(0.3, 0.5, 0.0);
+	aHindernis[3].SetRadius(0.05);
+	aHindernis[3].SetRepulsivness(20);
+	
+	}
 	for (int i = 0; i < nRob; ++i)
 	{
 		radius[i] = 0.05;
@@ -84,20 +107,20 @@ void Init() {
 		if(i == 0){
 			pot[i].setStartPosition(1.0, 1.0);
 			pot[i].setGoalPosition(0.0, 0.0);
-			roboterPot[i].SetRepulsivness(100);
+			roboterPot[i].SetRepulsivness(1);
 		}else if (i == 1) {
 			pot[i].setStartPosition(0.0, 0.0);
 			pot[i].setGoalPosition(1.0, 1.0);
-			roboterPot[i].SetRepulsivness(500);
+			roboterPot[i].SetRepulsivness(4);
 		}else if (i == 2) {
 			pot[i].setStartPosition(1.0, 0.0);
 			pot[i].setGoalPosition(0.0, 1.0);
-			roboterPot[i].SetRepulsivness(1000);
+			roboterPot[i].SetRepulsivness(8);
 		}
 		else if (i == 3) {
 			pot[i].setStartPosition(0.0, 1.0);
 			pot[i].setGoalPosition(1.0, 0.0);
-			roboterPot[i].SetRepulsivness(2000);
+			roboterPot[i].SetRepulsivness(16);
 		}
 		total_counter[i] = 0;
 		roboterPot[i].SetCenter(pot[i].getStartPosition());
@@ -162,6 +185,30 @@ void RenderScene(void)
 		glTranslatef(robPos[3].x, robPos[3].y, 0.f);
 		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
 		glPopMatrix();
+
+		glPushMatrix();
+		glColor4f(farben[28], farben[29], farben[30], farben[31]);
+		glTranslatef(aHindernis[0].GetCenter().x, aHindernis[0].GetCenter().y, 0.f);
+		glutSolidCylinder(aHindernis[0].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
+
+		glPushMatrix();
+		glColor4f(farben[28], farben[29], farben[30], farben[31]);
+		glTranslatef(aHindernis[1].GetCenter().x, aHindernis[1].GetCenter().y, 0.f);
+		glutSolidCylinder(aHindernis[1].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
+
+		glPushMatrix();
+		glColor4f(farben[28], farben[29], farben[30], farben[31]);
+		glTranslatef(aHindernis[2].GetCenter().x, aHindernis[2].GetCenter().y, 0.f);
+		glutSolidCylinder(aHindernis[2].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
+
+		glPushMatrix();
+		glColor4f(farben[28], farben[29], farben[30], farben[31]);
+		glTranslatef(aHindernis[3].GetCenter().x, aHindernis[3].GetCenter().y, 0.f);
+		glutSolidCylinder(aHindernis[3].GetRadius(), 0.05f, 32, 32);
+		glPopMatrix();
 	}
 
 	// 
@@ -207,16 +254,57 @@ void Animate(int value) {
 		{
 			Cylinder obstacles[nHind];
 			int count = 0;
+			double dist = DBL_MAX;
+			int nearestObst;
+
 			for (int j = 0; j < nRob; ++j)
 			{
 				if (j != i){
+				/*	double tmpDist;
+					Point tmpPoint;
+					if ((tmpDist = roboterPot[j].distance(roboterPot[i], &tmpPoint)) < dist) {
+						dist = tmpDist;
+						nearestObst = j;
+						obstacles[count] = roboterPot[j];
+						}*/
 					obstacles[count] = roboterPot[j];
 					//obstacles[count].SetCenter(robPos[j].x, robPos[j].y, robPos[j].z);
 					++count;
-				}
+			}
+				
 			}
 
-			goal_reached[i] = pot[i].update_cylinder(obstacles, &(roboterPot[i]), nHind);
+			for (int j = nRob; j < nHind +1 ; ++j)
+			{
+				/*double tmpDist;
+				Point tmpPoint;
+				if ((tmpDist = aHindernis[j - nRob].distance(roboterPot[i], &tmpPoint)) < dist) {
+					dist = tmpDist;
+					nearestObst = j;
+					obstacles[count] = aHindernis[j - nRob];
+				}*/
+				
+				obstacles[count] = aHindernis[j - nRob];
+					//obstacles[count].SetCenter(robPos[j].x, robPos[j].y, robPos[j].z);
+					++count;
+			}
+
+			if(false){
+				goal_reached[i] = pot[i].update_cylinder(obstacles, &(roboterPot[i]), count);
+			}
+			else {
+
+				Cylinder* obstaclesTMP = new Cylinder[count + 1] ;
+				obstaclesTMP[0] = Cylinder(Point(0.5, 0.5, 0.0), 0.75, 0.05);
+				++count;
+				for (int i = 1; i < count; i++)
+				{
+					obstaclesTMP[i] = obstacles[i - 1];
+				}
+
+				goal_reached[i] = pot[i].update_cylinder_navigation(obstaclesTMP, &(roboterPot[i]), count );
+			}
+
 			robPos[i] = roboterPot[i].GetCenter();
 			//robPos[i] = pot[i].getRobPos();
 			//roboterPot[i].SetCenter(robPos[i].x, robPos[i].y, robPos[i].z);
@@ -336,8 +424,9 @@ int main(int argc, char **argv) {
 		file.close();
 	}
 	else
+	{ 
 		currentAlgorithm = Algorithm::PotentialFieldMethod;
-
+	}
     // TimerCallback registrieren; wird nach animationUpdateInMS aufgerufen mit Parameter 0 für Frame 0
 	if (currentAlgorithm == Algorithm::RRTConnect)
 		glutTimerFunc(animationUpdateInMS, AnimateProgram, 0);
@@ -480,14 +569,22 @@ void SpecialFunc(int key, int x, int y) { // Funktions- und Pfeil-Tasten abfrage
 	switch (key) {
 		case GLUT_KEY_F1: // alles wird zurueckgesetzt
 			break;
-		case GLUT_KEY_F2:;break;
-		case GLUT_KEY_F3:;break;
-		case GLUT_KEY_F4:;break;
-		case GLUT_KEY_F5:;break;
-		case GLUT_KEY_F6:;break;
-		case GLUT_KEY_F7:;break;
-		case GLUT_KEY_F8:break;
-		case GLUT_KEY_F9:break;
+		case GLUT_KEY_F2:
+			break;
+		case GLUT_KEY_F3:
+			break;
+		case GLUT_KEY_F4:
+			break;
+		case GLUT_KEY_F5:
+			break;
+		case GLUT_KEY_F6:
+			break;
+		case GLUT_KEY_F7:
+			break;
+		case GLUT_KEY_F8:
+			break;
+		case GLUT_KEY_F9:
+			break;
 		case GLUT_KEY_F10:
 			break;
 		case GLUT_KEY_F11:

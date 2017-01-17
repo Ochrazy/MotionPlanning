@@ -12,9 +12,13 @@
 #include "Point.h"
 #include "Potential.h"
 #include "Program.h"
+//#include <cmath>
+#include <limits>
+#include <iostream>   
+#include <fstream>
 
 const int nRob = 4;     // Anzahl der Roboterglieder
-const int nHind = 0 + nRob -1;    // Anzahl der Hindernisse
+const int nHind = 4 + nRob -1;    // Anzahl der Hindernisse
 int total_counter[nRob];
 
 Roboter roboter;
