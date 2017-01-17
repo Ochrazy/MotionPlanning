@@ -6,7 +6,7 @@
 using namespace std;
 
 /*********************************************************************************************************************************/
-static const double INKR = 0.01;        // step size for robot along gradient
+static const double INKR = 0.005;        // step size for robot along gradient
 static const double DIST_MIN = 0.05;    // minimum distance between the robot and the goal
 static const double GOAL_ERROR = 0.01;  // distance between the robot and the goal
 
@@ -173,7 +173,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 }
 
 /*************************************************************************************************************************/
-bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot, int nObst)
+bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot, int nObst, double k)
 {
 	Point robotPos = actPoint;
 	static int cnt = 0;
@@ -235,7 +235,7 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot,
 	Point q_minus_qgoal = robotPos - goalPosition;
 	double dist_q_qgoal = robotPos.Distance(goalPosition);
 	double dist_q_qgoal_squared = pow(dist_q_qgoal, 2);
-	double K = 10.;
+	double K = k;
 
 	// A - B
 	Point A = 2. * q_minus_qgoal * pow(pow(dist_q_qgoal, 2. * K) + beta_q, 1. / K);

@@ -32,7 +32,7 @@ public:
 
     bool update_box(Box obstacle[], Box robot[], int nObst);
     bool update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst);
-    bool update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot, int nObst);
+    bool update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot, int nObst, double k = 10);
 };
 
 #endif /* __POTENTIAL_H__ */

@@ -10,6 +10,8 @@
 #include <Windows.h>
 #include "Globals.h"
 
+char** arguments;
+int argumentcount;
 using namespace std;
 
 bool check_local_minimum(vector<Point>, Point, int i);
@@ -58,9 +60,28 @@ void Init() {
 
 	// Hindernisse initialisieren
 	// Hierbei wird für jedes Hinderniss die Größe ( Skalierung ) und die Position im Raum gesetzt
-	if(true){
 	
-		aHindernis[0].SetCenter(0.4, 0.4, 0.);  // outer bound
+	if (strcmp(arguments[3], "0") == 0) {
+
+		aHindernis[0].SetCenter(2., 2., 2.);  // outer bound
+		aHindernis[0].SetRadius(0.00);
+		aHindernis[0].SetRepulsivness(0);
+
+		aHindernis[1].SetCenter(2., 2., 2.);
+		aHindernis[1].SetRadius(0.00);
+		aHindernis[1].SetRepulsivness(0);
+
+		aHindernis[2].SetCenter(2., 2., 2.);
+		aHindernis[2].SetRadius(0.00);
+		aHindernis[2].SetRepulsivness(0);
+
+		aHindernis[3].SetCenter(2., 2., 2.);
+		aHindernis[3].SetRadius(0.00);
+		aHindernis[3].SetRepulsivness(0);
+
+	}else if(strcmp(arguments[3], "1") == 0){
+	
+	aHindernis[0].SetCenter(0.4, 0.4, 0.);  // outer bound
 	aHindernis[0].SetRadius(0.05);
 	aHindernis[0].SetRepulsivness(20);
 
@@ -76,7 +97,7 @@ void Init() {
 	aHindernis[3].SetRadius(0.05);
 	aHindernis[3].SetRepulsivness(20);
 
-	}else{
+	}else if (strcmp(arguments[3], "2") == 0) {
 
 	aHindernis[0].SetCenter(0.5, 0.3, 0.);  // outer bound
 	aHindernis[0].SetRadius(0.05);
@@ -97,35 +118,37 @@ void Init() {
 	}
 	for (int i = 0; i < nRob; ++i)
 	{
-		radius[i] = 0.05;
-		roboterPot[i].SetRadius(radius[i]);
+		if (i < atoi(arguments[4])) {
+			radius[i] = 0.05;
+			roboterPot[i].SetRadius(radius[i]);
 
-		goal_reached[i] = false;
-		local_minimum_reached[i] = false;
-
-		// Initialize start, goal, actPoint and heading
-		if(i == 0){
-			pot[i].setStartPosition(1.0, 1.0);
-			pot[i].setGoalPosition(0.0, 0.0);
-			roboterPot[i].SetRepulsivness(1);
-		}else if (i == 1) {
-			pot[i].setStartPosition(0.0, 0.0);
-			pot[i].setGoalPosition(1.0, 1.0);
-			roboterPot[i].SetRepulsivness(4);
-		}else if (i == 2) {
-			pot[i].setStartPosition(1.0, 0.0);
-			pot[i].setGoalPosition(0.0, 1.0);
-			roboterPot[i].SetRepulsivness(8);
+			goal_reached[i] = false;
+			local_minimum_reached[i] = false;
+		
+			// Initialize start, goal, actPoint and heading
+			if (i == 0) {
+				pot[i].setStartPosition(1.0, 1.0);
+				pot[i].setGoalPosition(0.0, 0.0);
+				roboterPot[i].SetRepulsivness(1);
+			}else if (i == 1) {
+				pot[i].setStartPosition(0.0, 0.0);
+				pot[i].setGoalPosition(1.0, 1.0);
+				roboterPot[i].SetRepulsivness(4);
+			}else if ( i == 2) {
+				pot[i].setStartPosition(1.0, 0.0);
+				pot[i].setGoalPosition(0.0, 1.0);
+				roboterPot[i].SetRepulsivness(8);
+			}
+			else if (i == 3) {
+				pot[i].setStartPosition(0.0, 1.0);
+				pot[i].setGoalPosition(1.0, 0.0);
+				roboterPot[i].SetRepulsivness(16);
+			}
+			total_counter[i] = 0;
+			roboterPot[i].SetCenter(pot[i].getStartPosition());
+			pot[i].setActPoint(pot[i].getStartPosition());
+			path[i].push_back(pot[i].getStartPosition());
 		}
-		else if (i == 3) {
-			pot[i].setStartPosition(0.0, 1.0);
-			pot[i].setGoalPosition(1.0, 0.0);
-			roboterPot[i].SetRepulsivness(16);
-		}
-		total_counter[i] = 0;
-		roboterPot[i].SetCenter(pot[i].getStartPosition());
-		pot[i].setActPoint(pot[i].getStartPosition());
-		path[i].push_back(pot[i].getStartPosition());
 	}
 }
 
@@ -162,36 +185,43 @@ void RenderScene(void)
 	}
 	else if (currentAlgorithm == Algorithm::PotentialFieldMethod)
 	{
-		glPushMatrix();
-		glColor4f(farben[0], farben[1], farben[2], farben[3]);
-		glTranslatef(robPos[0].x, robPos[0].y, 0.f);
-		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
+		for (int i = 0; i < atoi(arguments[4]); ++i){
+			glPushMatrix();
+			glColor4f(farben[i * 4 + 0], farben[i * 4 + 1], farben[i * 4 + 2], farben[i * 4 + 3]);
+			glTranslatef(robPos[i].x, robPos[i].y, 0.f);
+			glutSolidCylinder(roboterPot[i].GetRadius(), 0.05f, 32, 32);
+			glPopMatrix();
 
+		}
+		/*
 		glPushMatrix();
 		glColor4f(farben[8], farben[9], farben[10], farben[11]);
 		glTranslatef(robPos[1].x, robPos[1].y, 0.f);
-		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glutSolidCylinder(roboterPot[1].GetRadius(), 0.05f, 32, 32);
 		glPopMatrix();
 
 		glPushMatrix();
 		glColor4f(farben[12], farben[13], farben[14], farben[15]);
 		glTranslatef(robPos[2].x, robPos[2].y, 0.f);
-		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glutSolidCylinder(roboterPot[2].GetRadius(), 0.05f, 32, 32);
 		glPopMatrix();
 
 		glPushMatrix();
 		glColor4f(farben[16], farben[17], farben[18], farben[19]);
 		glTranslatef(robPos[3].x, robPos[3].y, 0.f);
-		glutSolidCylinder(roboterPot[0].GetRadius(), 0.05f, 32, 32);
+		glutSolidCylinder(roboterPot[3].GetRadius(), 0.05f, 32, 32);
 		glPopMatrix();
+		*/
 
-		glPushMatrix();
-		glColor4f(farben[28], farben[29], farben[30], farben[31]);
-		glTranslatef(aHindernis[0].GetCenter().x, aHindernis[0].GetCenter().y, 0.f);
-		glutSolidCylinder(aHindernis[0].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
+		for (int i = 0; i < atoi(arguments[5]); ++i) {
+			glPushMatrix();
+			glColor4f(farben[28 + 0], farben[28 + 1], farben[28 + 2], farben[28 + 3]);
+			glTranslatef(aHindernis[i].GetCenter().x, aHindernis[i].GetCenter().y, 0.f);
+			glutSolidCylinder(aHindernis[i].GetRadius(), 0.05f, 32, 32);
+			glPopMatrix();
+		}
 
+		/*
 		glPushMatrix();
 		glColor4f(farben[28], farben[29], farben[30], farben[31]);
 		glTranslatef(aHindernis[1].GetCenter().x, aHindernis[1].GetCenter().y, 0.f);
@@ -209,6 +239,8 @@ void RenderScene(void)
 		glTranslatef(aHindernis[3].GetCenter().x, aHindernis[3].GetCenter().y, 0.f);
 		glutSolidCylinder(aHindernis[3].GetRadius(), 0.05f, 32, 32);
 		glPopMatrix();
+		*/
+
 	}
 
 	// 
@@ -249,7 +281,7 @@ void Animate(int value) {
 	DWORD dwStart = GetTickCount();
 	for (int i = 0; i < nRob; ++i)
 	{
-		if (!goal_reached[i] && !local_minimum_reached[i])
+		if (i < atoi(arguments[4]) && !goal_reached[i] && !local_minimum_reached[i])
 		//if (!goal_reached && !local_minimum_reached)
 		{
 			Cylinder obstacles[nHind];
@@ -259,7 +291,8 @@ void Animate(int value) {
 
 			for (int j = 0; j < nRob; ++j)
 			{
-				if (j != i){
+				if (j != i && j < atoi(arguments[4]))
+				{
 				/*	double tmpDist;
 					Point tmpPoint;
 					if ((tmpDist = roboterPot[j].distance(roboterPot[i], &tmpPoint)) < dist) {
@@ -270,7 +303,7 @@ void Animate(int value) {
 					obstacles[count] = roboterPot[j];
 					//obstacles[count].SetCenter(robPos[j].x, robPos[j].y, robPos[j].z);
 					++count;
-			}
+				}
 				
 			}
 
@@ -283,16 +316,18 @@ void Animate(int value) {
 					nearestObst = j;
 					obstacles[count] = aHindernis[j - nRob];
 				}*/
-				
-				obstacles[count] = aHindernis[j - nRob];
+				if (j  < atoi(arguments[5]) + nRob) {
+					obstacles[count] = aHindernis[j - nRob];
 					//obstacles[count].SetCenter(robPos[j].x, robPos[j].y, robPos[j].z);
 					++count;
+				}
+					
 			}
 
-			if(false){
+			if(strcmp(arguments[2], "normal") == 0){
 				goal_reached[i] = pot[i].update_cylinder(obstacles, &(roboterPot[i]), count);
 			}
-			else {
+			else if (strcmp(arguments[2], "navigation") == 0){
 
 				Cylinder* obstaclesTMP = new Cylinder[count + 1] ;
 				obstaclesTMP[0] = Cylinder(Point(0.5, 0.5, 0.0), 0.75, 0.05);
@@ -302,7 +337,7 @@ void Animate(int value) {
 					obstaclesTMP[i] = obstacles[i - 1];
 				}
 
-				goal_reached[i] = pot[i].update_cylinder_navigation(obstaclesTMP, &(roboterPot[i]), count );
+				goal_reached[i] = pot[i].update_cylinder_navigation(obstaclesTMP, &(roboterPot[i]), count , atof(arguments[6]));
 			}
 
 			robPos[i] = roboterPot[i].GetCenter();
@@ -372,7 +407,11 @@ void AnimateProgram(int value)
 	glutTimerFunc(animationUpdateInMS, AnimateProgram, ++value);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char* argv[]) {
+	
+	arguments = argv;
+	argumentcount = argc;
+	
 	camera.camera();
 	keys.keys();
 	
@@ -398,40 +437,46 @@ int main(int argc, char **argv) {
 	// Load program
 	if (argc > 1)
 	{
-		inputProgram = new Program();
-		currentAlgorithm = Algorithm::RRTConnect;
-		std::ifstream file;
-		file.open("rrt.prg");
-
-		std::string input;
-		file >> input; // "ProgramFile"
-
-		while (!file.eof())
+		if(strcmp(argv[1], "rrt") == 0)
 		{
-			file >> input; // "PTP_AX "
-			if (input.compare("EndProgramFile") == 0)
-				break;
+			inputProgram = new Program();
+			currentAlgorithm = Algorithm::RRTConnect;
+			std::ifstream file;
+			file.open("rrt.prg");
 
-			// 2 Robots
-			Point2D point;
-			Point2D secondPoint;
-			file >> point.x >> point.y >> secondPoint.x >> secondPoint.y;
-			vector<Point2D> prog;
-			prog.push_back(point);
-			prog.push_back(secondPoint);
-			inputProgram->program.push_back(prog);
+			std::string input;
+			file >> input; // "ProgramFile"
+
+			while (!file.eof())
+			{
+				file >> input; // "PTP_AX "
+				if (input.compare("EndProgramFile") == 0)
+					break;
+
+				// 2 Robots
+				Point2D point;
+				Point2D secondPoint;
+				file >> point.x >> point.y >> secondPoint.x >> secondPoint.y;
+				vector<Point2D> prog;
+				prog.push_back(point);
+				prog.push_back(secondPoint);
+				inputProgram->program.push_back(prog);
+			}
+			file.close();
+		} else if (strcmp(argv[1],"pfm") == 0) {
+			currentAlgorithm = Algorithm::PotentialFieldMethod;
 		}
-		file.close();
+		// TimerCallback registrieren; wird nach animationUpdateInMS aufgerufen mit Parameter 0 für Frame 0
+		
+		if (currentAlgorithm == Algorithm::RRTConnect)
+			glutTimerFunc(animationUpdateInMS, AnimateProgram, 0);
+		else glutTimerFunc(animationUpdateInMS, Animate, 0);
+		glutMainLoop();
 	}
 	else
 	{ 
-		currentAlgorithm = Algorithm::PotentialFieldMethod;
+		cout << "provide parameter \"pfm\" or \"rrt\"" << endl;
 	}
-    // TimerCallback registrieren; wird nach animationUpdateInMS aufgerufen mit Parameter 0 für Frame 0
-	if (currentAlgorithm == Algorithm::RRTConnect)
-		glutTimerFunc(animationUpdateInMS, AnimateProgram, 0);
-	else glutTimerFunc(animationUpdateInMS, Animate, 0);
-	glutMainLoop();
 	return 0;
 }
 
