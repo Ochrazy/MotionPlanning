@@ -28,9 +28,9 @@ namespace DSTARLITE
 			 * @param  char*    name of the simulator
 			 * @param  Config   config options
 			 */
-			DStarLite(position2D start, position2D goal, unsigned int width, unsigned int height, int inGoalCostObjects = 17);
-			DStarLite(Map* map, std::vector<position4D> startGoalPositions, int inGoalCostObjects = 17);
-			DStarLite(int MapWithConstantCost, int mapSizeX, int mapSizeY, std::vector<position4D> startGoalPositions, int inGoalCostObjects = 17);
+			DStarLite(position2D start, position2D goal, unsigned int width, unsigned int height, double inGoalCostObjects = 26);
+			DStarLite(Map* map, std::vector<position4D> startGoalPositions, double inGoalCostObjects = 26);
+			DStarLite(int MapWithConstantCost, int mapSizeX, int mapSizeY, std::vector<position4D> startGoalPositions, double inGoalCostObjects = 26);
 
 			/**
 			 * Deconstructor.
@@ -50,8 +50,8 @@ namespace DSTARLITE
 			void deleteObstacleFromMap(position2D obstacle);
 
 			void setNewStart(position2D start, int plannerIndex);
-			void setObstacle(position2D obstacle, int plannerIndex, int cost = Map::Cell::COST_UNWALKABLE);
-			void deleteObstacleFromMap(position2D obstacle, int plannerIndex, int cost = 1.0);
+			void setObstacle(position2D obstacle, int plannerIndex, double cost = Map::Cell::COST_UNWALKABLE, int width = 1, int height = 1);
+			void deleteObstacleFromMap(position2D obstacle, int plannerIndex, double cost = 5.0, int width = 1, int height = 1);
 			void printMap();
 			position2D step(std::pair<unsigned int, unsigned int> current, std::pair<unsigned int, unsigned int> obstacle);
 			std::vector<position2D> step(std::vector<position2D> currentPositions);
@@ -73,7 +73,7 @@ namespace DSTARLITE
 
 			std::vector<position2D> currentPositions;
 
-			int goalCostObjects;
+			double goalCostObjects;
 	};
 };
 

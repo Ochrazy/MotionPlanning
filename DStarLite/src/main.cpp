@@ -1,8 +1,33 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
+#include <fstream>
 
 #include "dstarlite.h"
+
+void write_easyrob_program_file(std::vector<std::vector<position2D>> path, float scale, std::string filename, bool jump_to)
+{
+	std::ofstream myfile;
+
+	myfile.open(filename);
+	myfile << "ProgramFile" << std::endl;
+
+	for (int i = 0; i < (int)path.size(); i++)
+	{
+		if (jump_to)
+			myfile << "JUMP_TO_AX ";
+		else
+			myfile << "PTP_AX ";
+
+		myfile << path[i][0].first/ scale << " " << path[i][0].second/ scale;
+		for (int r = 1; r < (int)path[i].size(); r++)
+			myfile << " " << path[i][r].first/ scale << " " << path[i][r].second/ scale;
+
+		myfile << std::endl;
+	}
+	myfile << "EndProgramFile" << std::endl;
+	myfile.close();
+}
 
 /**
  * Main.
@@ -36,17 +61,15 @@ int main(int argc, char **argv)
 	//	if (current2.first != -99) path2.push_back(current2);
 	//	else current2 = goal2;
 	//}
-
-	std::vector<position4D> startGoalPositions;
-	position4D sg1 = std::make_pair(std::make_pair(2, 2), std::make_pair(2, 2));
-	startGoalPositions.push_back(sg1);
-	position4D sg2 = std::make_pair(std::make_pair(0, 4), std::make_pair(3, 4));
-	startGoalPositions.push_back(sg2);
-	position4D sg3 = std::make_pair(std::make_pair(2, 0), std::make_pair(2, 4));
-	startGoalPositions.push_back(sg3);
 	
-	DStarLite dstarlite(5, 5, 5, startGoalPositions, 20);
-	std::vector<std::vector<position2D>> paths = dstarlite.calculatePaths();
-
+	std::vector<std::vector<position2D>> paths;
+	std::vector<position4D> startGoalPositions;
+	startGoalPositions.push_back(std::make_pair(std::make_pair(0, 25), std::make_pair(50, 25)));
+	//startGoalPositions.push_back(std::make_pair(std::make_pair(0, 0), std::make_pair(99, 99)));
+	startGoalPositions.push_back(std::make_pair(std::make_pair(26, 50), std::make_pair(26, 0)));
+	
+	DStarLite dstarlite(5, 100, 100, startGoalPositions, 30);
+	paths = dstarlite.calculatePaths();
+	write_easyrob_program_file(paths, 100, "rrt.prg", false);
 	return 0;
 }

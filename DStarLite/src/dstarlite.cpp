@@ -31,7 +31,7 @@ list<Map::Cell*> DStarLite::replan(unsigned int plannerIndex)
 	// Replan the path
 	if (!_planner[plannerIndex]->replan())
 	{
-		std::cout << "No Solution Found!";
+		std::cout << "No Solution Found! " << plannerIndex;
 		return _planner[plannerIndex]->path();
 	}
 
@@ -44,7 +44,7 @@ list<Map::Cell*> DStarLite::replan(unsigned int plannerIndex)
  * @param  unsigned char*    name of the DStarLite'
  * @param  Config            config options
 */
-DStarLite::DStarLite(position2D start, position2D goal, unsigned int width, unsigned int height, int inGoalCostObjects)
+DStarLite::DStarLite(position2D start, position2D goal, unsigned int width, unsigned int height, double inGoalCostObjects)
 	: goalCostObjects(inGoalCostObjects)
 {
 	// Prepare real and robot image buffers
@@ -81,7 +81,7 @@ DStarLite::DStarLite(position2D start, position2D goal, unsigned int width, unsi
 	currentPositions.push_back(start);
 }
 
-DStarLite::DStarLite(Map* map, std::vector<position4D> startGoalPositions, int inGoalCostObjects)
+DStarLite::DStarLite(Map* map, std::vector<position4D> startGoalPositions, double inGoalCostObjects)
 	: goalCostObjects(inGoalCostObjects)
 {
 	_map = map;
@@ -96,7 +96,7 @@ DStarLite::DStarLite(Map* map, std::vector<position4D> startGoalPositions, int i
 	}
 }
 
-DStarLite::DStarLite(int MapWithConstantCost, int mapSizeX, int mapSizeY, std::vector<position4D> startGoalPositions, int inGoalCostObjects)
+DStarLite::DStarLite(int MapWithConstantCost, int mapSizeX, int mapSizeY, std::vector<position4D> startGoalPositions, double inGoalCostObjects)
 	: goalCostObjects(inGoalCostObjects)
 {
 	// Prepare real and robot image buffers
@@ -152,24 +152,33 @@ void DStarLite::setNewStart(position2D start, int plannerIndex)
 	_planner[plannerIndex]->start((*_map)(start.second, start.first));
 }
 
-void DStarLite::setObstacle(position2D obstacle, int plannerIndex, int cost)
+void DStarLite::setObstacle(position2D obstacle, int plannerIndex, double cost, int width, int height)
 {
-	_planner[plannerIndex]->update((*_map)(obstacle.second, obstacle.first), cost);
+	// Incorporates Minkowski Difference (Rectangle)
+	for (int h = -height; h < height; h++)
+		for (int w = -width; w < width; w++)
+			if(_map->has(obstacle.second + h, obstacle.first + w))
+				_planner[plannerIndex]->update((*_map)(obstacle.second + h, obstacle.first + w), cost);
 }
 
-void DStarLite::deleteObstacleFromMap(position2D obstacle, int plannerIndex, int cost)
+void DStarLite::deleteObstacleFromMap(position2D obstacle, int plannerIndex, double cost, int width, int height)
 {
-	_planner[plannerIndex]->update((*_map)(obstacle.second, obstacle.first), cost);
+	// Incorporates Minkowski Difference (Rectangle)
+	for (int h = -height; h < height; h++)
+		for (int w = -width; w < width; w++)
+			if (_map->has(obstacle.second + h, obstacle.first + w))
+				_planner[plannerIndex]->update((*_map)(obstacle.second + h, obstacle.first + w), cost);
 }
 
 void DStarLite::printMap()
 {
-	for (unsigned int x = 0; x < _map->cols(); x++)
+	for (unsigned int y = _map->rows(); y > 0; y--)
 	{
-		for (unsigned int y = 0; y < _map->rows(); y++)
+		for (unsigned int x = 0; x < _map->cols(); x++)
 		{
-			std::cout << "(" << x << ", " << y << "): " << (*_map)(y, x)->cost << std::endl; 
+			std::cout << "(" << x << ", " << y - 1 << "): " << (*_map)(y - 1, x)->cost << " ";
 		}
+		std::cout << std::endl;
 	}
 	std::cout << std::endl;
 }
@@ -213,11 +222,14 @@ std::vector<position2D> DStarLite::step(std::vector<position2D> currentPositions
 	{
 		// Set Obstacles
 		int obsIndex = index - 1;
-		int cost = 17;
-		for (list<Map::Cell*>::reverse_iterator cell = paths[obsIndex].rbegin(); cell != paths[obsIndex].rend(); ++cell)
+		int cost = (5 * 5 + 3) * 10.0;
+		for (list<Map::Cell*>::iterator cell = paths[obsIndex].begin(); cell != paths[obsIndex].end(); ++cell)
 			for (unsigned int pi = index; pi < _planner.size(); pi++)
-				setObstacle(std::make_pair((*cell)->x(), (*cell)->y()), pi, cost++);
-
+				setObstacle(std::make_pair((*cell)->x(), (*cell)->y()), pi, cost--);
+		// Object self
+		for (unsigned int pi2 = index; pi2 < _planner.size(); pi2++)
+			setObstacle(std::make_pair(paths[obsIndex].front()->x(), paths[obsIndex].front()->y()), pi2, Map::Cell::COST_UNWALKABLE);
+			
 		setNewStart(currentPositions[index], index);
 		paths.push_back(replan(index));
 
@@ -243,6 +255,10 @@ std::vector<position2D> DStarLite::step(std::vector<position2D> currentPositions
 std::vector<std::vector<position2D>> DStarLite::calculatePaths()
 {
 	std::vector<std::vector<position2D>> paths;
+	std::vector<position2D> startPos;
+	for (unsigned int robot = 0; robot < currentPositions.size(); robot++)
+		startPos.push_back(currentPositions[robot]);
+	paths.push_back(startPos);
 
 	while (true) 
 	{
