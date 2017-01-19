@@ -117,14 +117,14 @@ bool Cell<_ROBOT_TYPE, _CELL_TYPE>::CheckPosition(const Eigen::VectorXd &q)
 		if (tf_robot_.empty()) return false;
 		for (size_t i = 0; i < 2; ++i)
 		{
-			/*
-			// Test for collision with Obstacles
-			for (size_t j = 0; j < obj_obstacle_.size(); ++j)
-			{
-			if (solver_.shapeIntersect(*obj_robot_[i], tf_robot_[i], *obj_obstacle_[j], tf_obstacle_[j], nullptr))
-			return false;
-			}
-			*/
+			
+			//// Test for collision with Obstacles
+			//for (size_t j = 0; j < obj_obstacle_.size(); ++j)
+			//{
+			//if (solver_.shapeIntersect(*obj_robot_[i], tf_robot_[i], *obj_obstacle_[j], tf_obstacle_[j], nullptr))
+			//return false;
+			//}
+			
 
 			// Test for collision with Other Robots
 			for (size_t otherRobots = 0; otherRobots < 2; ++otherRobots)
@@ -143,14 +143,12 @@ bool Cell<_ROBOT_TYPE, _CELL_TYPE>::CheckPosition(const Eigen::VectorXd &q)
 
 		for (size_t i = 0; i < obj_robot_.size(); ++i)
 		{
-			/*
 			// Test for collision with Obstacles
 			for (size_t j = 0; j < obj_obstacle_.size(); ++j)
 			{
 				if (solver_.shapeIntersect(*obj_robot_[i], tf_robot_[i], *obj_obstacle_[j], tf_obstacle_[j], nullptr))
 					return false;
 			}
-			*/
 
 			// Test for collision with Other Robots
 			for (size_t otherRobots = 0; otherRobots < obj_robot_.size(); ++otherRobots)

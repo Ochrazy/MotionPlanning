@@ -142,17 +142,23 @@ std::vector<Eigen::VectorXd>  RRTConnect<_ROBOT_TYPE>::convertCDPath(std::vector
 	std::vector<Eigen::VectorXd> newPath;
 	for (unsigned int current = 0; current < path.size(); current++)
 	{
+		std::cout << path[current][0] << " " << path[current][1] << std::endl;
 		std::vector<Eigen::VectorXd> realPath = cell.convertToRealPosition(path[current]);
 		size_t sizeOfVector = realPath[0].size() + realPath.size();
 		Eigen::VectorXd q(sizeOfVector);
 
 		int index = 0;
 		for (size_t i = 0; i < realPath.size(); i++)
+		{
 			for (int x = 0; x < realPath[i].size(); x++)
 			{
+				std::cout << realPath[i][x] << " " << path[i][x];
 				q[index] = realPath[i][x];
 				index++;
 			}
+		}
+		std::cout << std::endl;
+		std::cout << std::endl;
 
 		newPath.push_back(q);
 	}
@@ -211,6 +217,18 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 			// Calculate qs
 			bool hitObs = cell.FirstContact(qs, cObstacle, qn, qrand, stepsize);
 
+			Eigen::VectorXd blub(2);
+			blub << 1.0, 1.0;
+			blub.normalize();
+
+			Eigen::VectorXd blub2(2);
+			blub2 << -1.0, -1.0;
+			blub2.normalize();
+			double wh = acos(blub2.dot(blub)) * 180.0 / 3.14159265;
+
+			if (acos(blub2.dot(blub)) < 0)
+				bool ds = true;
+
 			// New sample
 			if ((qs - qn).squaredNorm() > (0.001*0.001))  //qs != qn)
 			{
@@ -258,6 +276,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 					Eigen::VectorXd qsB, cObstacleB;
 					bool hitObs = cell.FirstContact(qsB, cObstacle, qn, qrand, stepsize);
 					int qsBIndex = -1;
+
 					// New sample
 					if ((qsB - qn).squaredNorm() > (0.001*0.001))  //qs != qn)
 					{
@@ -312,7 +331,9 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 			reverse(path.begin(), path.end());
 		}
 		// Refine Path
-		refinePath(path);
+		if (!bIsCoordinationDiagram)
+			refinePath(path);
+
 		if(bIsCoordinationDiagram)
 			path = convertCDPath(path);
 
@@ -323,7 +344,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 	// Print Graphs
 	std::cout << "Number of Nodes in g: " << boost::num_vertices(g) << std::endl;
 
-	/*
+	
 	write_gnuplot_file(g, "VisibilityGraph.dat");
 
 	if (solutionIndexB != -1)
@@ -331,7 +352,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 	std::cout << "Number of Nodes in gb: " << boost::num_vertices(gb) << std::endl;
 	write_gnuplot_file(gb, "VisibilityGraphB.dat");
 	}
-	*/
+	
 
 	return path;
 }

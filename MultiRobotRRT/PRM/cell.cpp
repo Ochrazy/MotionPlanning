@@ -5,6 +5,7 @@
 
 void MyCell::operator()(boxv_t &obj_obstacle, t3fv_t &tf_obstacle)
 {
+	/*
     tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.45, 0.3, 0)));
     tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.75, 0.3, 0)));
     tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.3, 0.6, 0)));
@@ -12,9 +13,12 @@ void MyCell::operator()(boxv_t &obj_obstacle, t3fv_t &tf_obstacle)
     tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.9, 0.6, 0)));
     tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.45, 0.9, 0)));
     tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.75, 0.9, 0)));
+	*/
+
+	tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.5, 0.0, 0)));
 
     for (auto i : tf_obstacle)
-        obj_obstacle.push_back(std::make_shared<fcl::Box>(0.2, 0.2, 0.05));
+        obj_obstacle.push_back(std::make_shared<fcl::Box>(0.1, 0.2, 0.05));
 }
 
 void write_nodes_file(graph_t g, std::string filename, bool jump_to)

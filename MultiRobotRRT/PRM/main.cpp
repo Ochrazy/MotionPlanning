@@ -14,8 +14,8 @@ int _tmain(int argc, _TCHAR* argv[])
 #ifdef TEST_CASE
 #if TEST_CASE == 0
 
-	qStart << 0.0, 0.0, .5, 0.0;
-	qGoal << .5, .45, 0.0, 0.9;
+	qStart << 0.0, 0.25, 0.25, 0.5;
+	qGoal << 0.5, 0.25, 0.25, 0.0;
 
 	/*MultiRobotCell cell;
 	bool bo = cell.CheckPosition(qStart);*/
@@ -63,26 +63,27 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 
-	/*RRTConnect2x2 rrt;
+	RRTConnect2x2 rrt;
 	std::vector<Eigen::VectorXd> path = rrt.doRRTConnect(qStart, qGoal);
-	write_easyrob_program_file(path, "rrt.prg");*/
+	write_easyrob_program_file(path, "rrt.prg");
 
-	std::vector<std::vector<Eigen::VectorXd>> paths;
+	/*std::vector<std::vector<Eigen::VectorXd>> paths;
 	Eigen::VectorXd qStart2(2), qGoal2(2);
-	qStart2 << 0., 0.25;
-	qGoal2 << 0.5, .25;
+	qStart2 << 1., 0.;
+	qGoal2 << 0.0, .1;
 	RRTConnect2 rrt;
 	paths.push_back(rrt.doRRTConnect(qStart2, qGoal2));
+	write_easyrob_program_file(paths[0], "rrt1.prg");
 
-	qStart2 << 0.25, 0.5;
-	qGoal2 << 0.25, 0.0;
+	qStart2 << 0., 0.;
+	qGoal2 << 1., 0.0;
 	paths.push_back(rrt.doRRTConnect(qStart2, qGoal2));
 
 	qStart2 << 0., 0.;
 	qGoal2 << 1., 1.;
 	RRTConnect2 rrtCD(paths);
 	std::vector<Eigen::VectorXd> path = rrtCD.doRRTConnect(qStart2, qGoal2);
-	write_easyrob_program_file(path, "rrt.prg");
+	write_easyrob_program_file(path, "rrt.prg");*/
 
 	return EXIT_SUCCESS;
 }
