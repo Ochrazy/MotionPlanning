@@ -63,7 +63,7 @@ void Init() {
 	
 	if (strcmp(arguments[3], "0") == 0) {
 
-		aHindernis[0].SetCenter(2., 2., 2.);  // outer bound
+		aHindernis[0].SetCenter(2., 2., 2.);
 		aHindernis[0].SetRadius(0.00);
 		aHindernis[0].SetRepulsivness(0);
 
@@ -81,7 +81,7 @@ void Init() {
 
 	}else if(strcmp(arguments[3], "1") == 0){
 	
-	aHindernis[0].SetCenter(0.4, 0.4, 0.);  // outer bound
+	aHindernis[0].SetCenter(0.4, 0.4, 0.); 
 	aHindernis[0].SetRadius(0.05);
 	aHindernis[0].SetRepulsivness(20);
 
@@ -99,7 +99,7 @@ void Init() {
 
 	}else if (strcmp(arguments[3], "2") == 0) {
 
-	aHindernis[0].SetCenter(0.5, 0.3, 0.);  // outer bound
+	aHindernis[0].SetCenter(0.5, 0.3, 0.);
 	aHindernis[0].SetRadius(0.05);
 	aHindernis[0].SetRepulsivness(20);
 
@@ -115,6 +115,20 @@ void Init() {
 	aHindernis[3].SetRadius(0.05);
 	aHindernis[3].SetRepulsivness(20);
 	
+	}
+	else if (strcmp(arguments[3], "3") == 0) {
+
+		
+		std::uniform_real_distribution<double> distribution(0.15, 0.85);
+		for(int i = 0; i < atoi(arguments[5]); ++i){
+
+			myclock::duration d = myclock::now() - beginning;
+			unsigned seed2 = d.count();
+			std::default_random_engine generator(seed2);
+			aHindernis[i].SetCenter(distribution(generator), distribution(generator), 0.);
+			aHindernis[i].SetRadius(0.05);
+			aHindernis[i].SetRepulsivness(20);
+		}
 	}
 	for (int i = 0; i < nRob; ++i)
 	{
@@ -193,26 +207,7 @@ void RenderScene(void)
 			glPopMatrix();
 
 		}
-		/*
-		glPushMatrix();
-		glColor4f(farben[8], farben[9], farben[10], farben[11]);
-		glTranslatef(robPos[1].x, robPos[1].y, 0.f);
-		glutSolidCylinder(roboterPot[1].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
-
-		glPushMatrix();
-		glColor4f(farben[12], farben[13], farben[14], farben[15]);
-		glTranslatef(robPos[2].x, robPos[2].y, 0.f);
-		glutSolidCylinder(roboterPot[2].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
-
-		glPushMatrix();
-		glColor4f(farben[16], farben[17], farben[18], farben[19]);
-		glTranslatef(robPos[3].x, robPos[3].y, 0.f);
-		glutSolidCylinder(roboterPot[3].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
-		*/
-
+		
 		for (int i = 0; i < atoi(arguments[5]); ++i) {
 			glPushMatrix();
 			glColor4f(farben[28 + 0], farben[28 + 1], farben[28 + 2], farben[28 + 3]);
@@ -220,30 +215,8 @@ void RenderScene(void)
 			glutSolidCylinder(aHindernis[i].GetRadius(), 0.05f, 32, 32);
 			glPopMatrix();
 		}
-
-		/*
-		glPushMatrix();
-		glColor4f(farben[28], farben[29], farben[30], farben[31]);
-		glTranslatef(aHindernis[1].GetCenter().x, aHindernis[1].GetCenter().y, 0.f);
-		glutSolidCylinder(aHindernis[1].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
-
-		glPushMatrix();
-		glColor4f(farben[28], farben[29], farben[30], farben[31]);
-		glTranslatef(aHindernis[2].GetCenter().x, aHindernis[2].GetCenter().y, 0.f);
-		glutSolidCylinder(aHindernis[2].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
-
-		glPushMatrix();
-		glColor4f(farben[28], farben[29], farben[30], farben[31]);
-		glTranslatef(aHindernis[3].GetCenter().x, aHindernis[3].GetCenter().y, 0.f);
-		glutSolidCylinder(aHindernis[3].GetRadius(), 0.05f, 32, 32);
-		glPopMatrix();
-		*/
-
 	}
 
-	// 
 	glPushMatrix();
 	glColor4f(0.f, 1.f, 0.f, 1.f);
 	glTranslatef(0.5f, 0.5f, 0.f);
@@ -346,17 +319,35 @@ void Animate(int value) {
 			local_minimum_reached[i] = check_local_minimum(path[i], robPos[i], i);
 			path[i].push_back(pot[i].getRobPos()); // speichern des Aktuellen Punktes in vector<Point> path
 			cout << "Robot " << i << ": " << robPos[i].x << " " << robPos[i].y << endl; // Ausgabe auf Konsole
-
 			if (local_minimum_reached[i])
 				cout << "Robot " << i << ": " << "reached local minimum" << endl;
 			if (goal_reached[i])
 				cout << "Robot " << i << ": " << "reached goal" << endl;
+
+
 		}
 	}
 	// Zeit für das Aufstellen des Konfigurationsraumes ausgeben ( in ms )
 	DWORD dwElapsed = GetTickCount() - dwStart;
 	printf("\nBerechnung dauerte %d ms\n", dwElapsed);
 	glutPostRedisplay();
+
+	int count = 0;
+	for (int i = 0; i < atoi(arguments[4]); ++i) {
+		if (goal_reached[i]) {
+			++count;
+		}
+	}
+	for (int i = 0; i < atoi(arguments[4]); ++i) {
+		if (local_minimum_reached[i]) {
+			++count;
+		}
+	}
+
+	if (count == atoi(arguments[4])) {
+		Init();
+	}
+
 	// Timer wieder registrieren - Animate wird so nach 100 msec mit value+=1 aufgerufen.
 	glutTimerFunc(animationUpdateInMS, Animate, ++value);
 }
@@ -573,37 +564,7 @@ void MouseMotion(int x, int y) { // Maus-Bewegungen mit gedrückter Maus-Taste
 	}
 }
 
-void PassivMouseMotion(int x, int y) { // Maus-Bewegungen ohne gedrückte Maus-Taste
-	// wird nicht benutzt, zu hecktisch :)
-	/*
-	int mid_x = width >> 1;
-	int mid_y = height >> 1;
-	float angle_y = 0.0f;
-	float angle_z = 0.0f;
-
-	if ((x == mid_x) && (y == mid_y)) return;
-
-	SetCursorPos(mid_x, mid_y);	// Set the mouse cursor in the center of the window						
-
-	// Get the direction from the mouse cursor, set a resonable maneuvering speed
-	angle_y = (float)((mid_x - x)) / 100000;
-	angle_z = (float)((mid_y - y)) / 100000;
-
-	// The higher the value is the faster the camera looks around.
-	camera.yeye += angle_z * 1;
-
-	// limit the rotation around the x-axis
-	if ((camera.yeye - camera.ypos) > 8)  camera.yeye = camera.ypos + 8;
-	if ((camera.yeye - camera.ypos) <-8)  camera.yeye = camera.ypos - 8;
-
-	GLdouble x_, y_, z_;
-	x_ = camera.xeye - camera.xpos;
-	y_ = camera.yeye - camera.ypos;
-	z_ = camera.zeye - camera.zpos;
-
-	camera.zeye = (float)(camera.zpos + sin(-angle_y)* x_ + cos(-angle_y)* z_);
-	camera.xeye = (float)(camera.xpos + cos(-angle_y)* x_ - sin(-angle_y)* z_);
-	*/
+void PassivMouseMotion(int x, int y) {
 }
 
 void SpecialFunc(int key, int x, int y) { // Funktions- und Pfeil-Tasten abfragen
@@ -631,6 +592,7 @@ void SpecialFunc(int key, int x, int y) { // Funktions- und Pfeil-Tasten abfrage
 		case GLUT_KEY_F9:
 			break;
 		case GLUT_KEY_F10:
+			Init();
 			break;
 		case GLUT_KEY_F11:
 			break;
