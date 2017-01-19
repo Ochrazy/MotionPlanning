@@ -61,6 +61,9 @@ void Init() {
 	// Hindernisse initialisieren
 	// Hierbei wird für jedes Hinderniss die Größe ( Skalierung ) und die Position im Raum gesetzt
 	
+	if (strcmp(arguments[1], "pfm") != 0)
+		return;
+
 	if (strcmp(arguments[3], "0") == 0) {
 
 		aHindernis[0].SetCenter(2., 2., 2.);  // outer bound
@@ -362,53 +365,81 @@ void Animate(int value) {
 }
 
 
-void AnimateProgram(int value) 
+void AnimateProgram(int value)
 {
-	// Startzeit
-	DWORD dwStart = GetTickCount();
-	
 	static int waypointIndex = 0;
+	// TimeSync
 	static int steps = 0;
-	static double timeInSecons = 3.0;
+	static double timeInSecons = 2.5;
 
-	Point startWaypoint(inputProgram->program[waypointIndex].front().x, inputProgram->program[waypointIndex].front().y, 0.);
-	Point endWaypoint(inputProgram->program[waypointIndex + 1].front().x, inputProgram->program[waypointIndex + 1].front().y, 0.);
-	Point direction = (endWaypoint - startWaypoint).Normalize();
-	double lengthStep = startWaypoint.Distance(endWaypoint) * (animationUpdateInMS / 1000.0);
-	robPos[0] = startWaypoint + direction * (lengthStep/ timeInSecons) * steps;
-
-	// second robot
-	Point startWaypoint2(inputProgram->program[waypointIndex].back().x, inputProgram->program[waypointIndex].back().y, 0.);
-	Point endWaypoint2(inputProgram->program[waypointIndex + 1].back().x, inputProgram->program[waypointIndex + 1].back().y, 0.);
-	Point direction2 = (endWaypoint2 - startWaypoint2).Normalize();
-	double lengthStep2 = startWaypoint2.Distance(endWaypoint2) * (animationUpdateInMS / 1000.0);
-	robPos[1] = startWaypoint2 + direction2 * (lengthStep2/ timeInSecons) * steps;
-
-	steps++;
 	static int maxSteps = (1.0 / (animationUpdateInMS / 1000.0));
 	if (steps > (maxSteps*timeInSecons))
 	{
 		steps = 0;
 		waypointIndex++;
-		if (waypointIndex > inputProgram->program.size()-2)
+		if (waypointIndex > inputProgram->program.size() - 2)
 			waypointIndex = 0;
+
+		timeInSecons = 3.0;
+		double baseSpeed = 0.25;
+		Point startWaypoint(inputProgram->program[waypointIndex][0].x, inputProgram->program[waypointIndex][0].y, 0.);
+		Point endWaypoint(inputProgram->program[waypointIndex + 1][0].x, inputProgram->program[waypointIndex + 1][0].y, 0.);
+		double dis = startWaypoint.Distance(endWaypoint);
+
+		if (dis > baseSpeed)
+		{
+			timeInSecons -= (dis - baseSpeed) * 2.0;
+		}
+		else
+		{
+			timeInSecons -= (baseSpeed - dis) * 10.0;
+		}
+		if (timeInSecons < 0.25)
+			timeInSecons = 0.25;
+	}
+	for (int nRob = 0; nRob < inputProgram->program[0].size(); nRob++)
+	{
+		Point startWaypoint(inputProgram->program[waypointIndex][nRob].x, inputProgram->program[waypointIndex][nRob].y, 0.);
+		Point endWaypoint(inputProgram->program[waypointIndex + 1][nRob].x, inputProgram->program[waypointIndex + 1][nRob].y, 0.);
+		Point direction = (endWaypoint - startWaypoint).Normalize();
+		double lengthStep = startWaypoint.Distance(endWaypoint) * (animationUpdateInMS / 1000.0);
+		robPos[nRob] = startWaypoint + direction * (lengthStep / timeInSecons) * steps;
 	}
 
-	/*robPos[0] = Point(0.0, 0.0, 0.0);
-	robPos[1] = Point(0.0, 0.05, 0.0);*/
+	steps++;
 
-	cout << "Robot : " << robPos[0].x << " " << robPos[0].y << " " << robPos[1].x << " " << robPos[1].y << endl; // Ausgabe auf Konsole
+	//// SpeedSync
+	//double maxSpeed = 0.0025;
+	//for (int nRob = 0; nRob < inputProgram->program[0].size(); nRob++)
+	//{
+	//	Point startWaypoint(inputProgram->program[waypointIndex][nRob].x, inputProgram->program[waypointIndex][nRob].y, 0.);
+	//	Point endWaypoint(inputProgram->program[waypointIndex + 1][nRob].x, inputProgram->program[waypointIndex + 1][nRob].y, 0.);
+	//	Point direction = (endWaypoint - startWaypoint).Normalize();
+	//	double lengthStep = startWaypoint.Distance(endWaypoint) * (animationUpdateInMS / 1000.0);
+	//	robPos[nRob] = startWaypoint + direction * maxSpeed * step;// (lengthStep / timeInSecons) * steps;
+	//}
 
-	// Zeit für das Aufstellen des Konfigurationsraumes ausgeben ( in ms )
-	DWORD dwElapsed = GetTickCount() - dwStart;
-	printf("\nBerechnung dauerte %d ms\n", dwElapsed);
+	//step++;
+
 	glutPostRedisplay();
 	// Timer wieder registrieren - Animate wird so nach 100 msec mit value+=1 aufgerufen.
 	glutTimerFunc(animationUpdateInMS, AnimateProgram, ++value);
 }
 
 int main(int argc, char* argv[]) {
-	
+
+	// Debug command line argument (rrt):
+	/*argc = 2;
+	argv[1] = "rrt";*/
+
+	//argc = 7;
+	//argv[1] = "pfm";
+	//argv[2] = "navigation";
+	//argv[3] = "2";
+	//argv[4] = "3";
+	//argv[5] = "3";
+	//argv[6] = "10";
+
 	arguments = argv;
 	argumentcount = argc;
 	
@@ -434,10 +465,10 @@ int main(int argc, char* argv[]) {
 	/*argc = 2;
 	argv[1] = "rrt.prg";*/
 
-	// Load program
 	if (argc > 1)
 	{
-		if(strcmp(argv[1], "rrt") == 0)
+		// Load program
+		if (strcmp(argv[1], "rrt") == 0)
 		{
 			inputProgram = new Program();
 			currentAlgorithm = Algorithm::RRTConnect;
@@ -455,11 +486,13 @@ int main(int argc, char* argv[]) {
 
 				// 2 Robots
 				Point2D point;
-				Point2D secondPoint;
-				file >> point.x >> point.y >> secondPoint.x >> secondPoint.y;
 				vector<Point2D> prog;
-				prog.push_back(point);
-				prog.push_back(secondPoint);
+				for (int nRob = 0; nRob < 2; nRob++)
+				{
+					file >> point.x >> point.y;
+					prog.push_back(point);
+				}
+
 				inputProgram->program.push_back(prog);
 			}
 			file.close();
