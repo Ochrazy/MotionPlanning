@@ -16,6 +16,11 @@
 #include <limits>
 #include <iostream>   
 #include <fstream>
+#include <random>
+#include <chrono>
+
+typedef std::chrono::high_resolution_clock myclock;
+myclock::time_point beginning = myclock::now();
 
 const int nRob = 4;     // Anzahl der Roboterglieder
 const int nHind = 4 + nRob -1;    // Anzahl der Hindernisse

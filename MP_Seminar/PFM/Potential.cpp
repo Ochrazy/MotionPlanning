@@ -118,8 +118,72 @@ bool Potential::update_box(Box obstacle[], Box robot[], int nObst)
 }
 
 /*************************************************************************************************************************/
+
 bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 {
+	/*Point robotPos = actPoint;
+	static int cnt = 0;
+
+	cnt++;
+
+	if (goalReached(robotPos, goalPosition, GOAL_ERROR))
+	{
+		actPoint = goalPosition;
+		//cout << "at goal, smile :)\n";
+		cnt = 0;
+		return true;
+	}
+	else if (cnt > 10000)
+	{
+		cout << "That took way too long, abort!\n";
+		cnt = 0;
+		return true;
+	}
+
+
+	double dist_goal = robotPos.Distance(goalPosition);
+	double d_star = (*robot).GetRadius() - 0.03;
+	double q_star = (*robot).GetRadius() - 0.03;
+	double sf_att = 1.;
+	//quadratic pot.
+	double d2 = 0.;
+	//double d2_delta_att = sf_att * dist_goal;
+	Point d2_delta_att_grad;
+
+	Point d2_delta_rep_grad(0.,0.,0.);
+	double min_dist_obst = std::numeric_limits<double>::max();
+	//repulsive pot.
+	for (int i = 0; i < nObst; ++i)
+	{
+		sf_att = (obstacle[i].GetRepulsivness() + 30.);
+		d2 = 0.5 * sf_att * pow(dist_goal, 2);
+		
+		d2_delta_att_grad = sf_att * (robotPos - goalPosition);
+		double sf_rep = obstacle[i].GetRepulsivness();
+		Point point_obst;
+		double dist_obst = obstacle[i].distance((*robot), &point_obst);
+		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();
+		if (abs(dist_obst) <= q_star && dist_obst < min_dist_obst){
+
+			Point  rob_origin = ((*robot).GetCenter() - obstacle[i].GetCenter());
+			Point rob_rot = Point((cos(20.5) * rob_origin.x) + (-sin(20.5) * rob_origin.y),
+				(sin(20.5) * rob_origin.x) + (cos(20.5) * rob_origin.y), 0.);
+			Point rob_back = rob_rot + obstacle[i].GetCenter();
+			d2_delta_rep_grad = force + rob_back;
+			min_dist_obst = dist_obst;
+		}
+	}
+
+	robotPos += d2_delta_rep_grad + d2_delta_att_grad;
+	actPoint.Mac((goalPosition - robotPos).Normalize(), INKR); // move next step
+
+	(*robot).SetCenter(actPoint);
+
+	return false;*/
+
+
+
+
 	Point robotPos = actPoint;
 	static int cnt = 0;
 
@@ -149,7 +213,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 	//double d2_delta_att = sf_att * dist_goal;
 	Point d2_delta_att_grad = sf_att * (robotPos - goalPosition);
 
-	Point d2_delta_rep_grad(0.,0.,0.);
+	Point d2_delta_rep_grad(0., 0., 0.);
 	double min_dist_obst = std::numeric_limits<double>::max();
 	//repulsive pot.
 	for (int i = 0; i < nObst; ++i)
@@ -158,7 +222,7 @@ bool Potential::update_cylinder(Cylinder obstacle[], Cylinder* robot, int nObst)
 		Point point_obst;
 		double dist_obst = obstacle[i].distance((*robot), &point_obst);
 		Point force = sf_rep * (1. / q_star - 1. / dist_obst) * 1. / pow(dist_obst, 2) * point_obst.Normalize();
-		if (abs(dist_obst) <= q_star && dist_obst < min_dist_obst){
+		if (abs(dist_obst) <= q_star && dist_obst < min_dist_obst) {
 			d2_delta_rep_grad = force;
 			min_dist_obst = dist_obst;
 		}
@@ -184,12 +248,13 @@ bool Potential::update_cylinder_navigation(Cylinder obstacle[], Cylinder* robot,
 	{
 		actPoint = goalPosition;
 		//cout << "at goal, smile :)\n";
-
+		cnt = 0;
 		return true;
 	}
 	else if (cnt > 10000)
 	{
 		cout << "That took way too long, abort!\n";
+		cnt = 0;
 		return true;
 	}
 
