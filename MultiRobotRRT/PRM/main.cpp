@@ -2,6 +2,10 @@
 #include <iostream>
 #include "RRTConnect.h"
 #include "MultiRobot2x2.h"
+#include "MultiRobot2x4.h"
+#include "MultiRobot2x3.h"
+#include "Robot3.h"
+#include "Robot4.h"
 
 using namespace std;
 
@@ -63,27 +67,62 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 #endif
 
-	RRTConnect2x2 rrt;
-	std::vector<Eigen::VectorXd> path = rrt.doRRTConnect(qStart, qGoal);
-	write_easyrob_program_file(path, "rrt.prg");
+	/*Eigen::VectorXd qStart4(4), qGoal4(4);
+	qStart4 << 0.0, 0.5, 0.25, 0.5;
+	qGoal4 << 0.25, 0.5, 0.0, 0.5;
 
-	/*std::vector<std::vector<Eigen::VectorXd>> paths;
+	RRTConnect2x2 rrt;
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path = rrt.doRRTConnect(qStart4, qGoal4);
+	write_easyrob_program_file(path, "rrt.prg");*/
+	
+	std::vector<std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>> paths;
 	Eigen::VectorXd qStart2(2), qGoal2(2);
-	qStart2 << 1., 0.;
-	qGoal2 << 0.0, .1;
+	qStart2 << 0.0, 0.25;
+	qGoal2 << 0.5, 0.25;
 	RRTConnect2 rrt;
 	paths.push_back(rrt.doRRTConnect(qStart2, qGoal2));
 	write_easyrob_program_file(paths[0], "rrt1.prg");
 
-	qStart2 << 0., 0.;
-	qGoal2 << 1., 0.0;
+	qStart2 << 0.25, 0.5;
+	qGoal2 << 0.25, 0.0;
 	paths.push_back(rrt.doRRTConnect(qStart2, qGoal2));
+	write_easyrob_program_file(paths[1], "rrt2.prg");
 
-	qStart2 << 0., 0.;
-	qGoal2 << 1., 1.;
-	RRTConnect2 rrtCD(paths);
-	std::vector<Eigen::VectorXd> path = rrtCD.doRRTConnect(qStart2, qGoal2);
+	qStart2 << 1.0, 1.0;
+	qGoal2 << 0.0, 0.0;
+	paths.push_back(rrt.doRRTConnect(qStart2, qGoal2));
+	/*
+	qStart2 << 0.0, 1.0;
+	qGoal2 << 0.0, 0.9;
+	paths.push_back(rrt.doRRTConnect(qStart2, qGoal2));*/
+
+	//Eigen::VectorXd qStart4(4), qGoal4(4);
+	//qStart4 << 0., 0., 0., 0.;
+	//qGoal4 << 1., 1., 1., 1.;
+	//RRTConnect3 rrtCD(paths);
+	//std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path = rrtCD.doRRTConnect(qStart4, qGoal4);
+	//write_easyrob_program_file(path, "rrt.prg");
+	Eigen::VectorXd qStart4(3), qGoal4(3);
+	qStart4 << 0., 0., 0.;
+	qGoal4 << 1., 1., 1.;
+	RRTConnect3 rrtCD(paths);
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path = rrtCD.doRRTConnect(qStart4, qGoal4);
+	write_easyrob_program_file(path, "rrt.prg");
+
+	/*Eigen::VectorXd qStart3(6), qGoal3(6);
+	qStart3 << 0.5, 0.0, 1.0, 0.5, 0.0, 0.0;
+	qGoal3 << 0.5, 1.0, 1.0, 0.0, 1.0, 1.0;
+	RRTConnect2x3 rrt;
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path = rrt.doRRTConnect(qStart3, qGoal3);
 	write_easyrob_program_file(path, "rrt.prg");*/
+
+	/*Eigen::VectorXd qStart3(8), qGoal3(8);
+	qStart3 << 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0;
+	qGoal3 << 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0;
+	RRTConnect2x4 rrt;
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path = rrt.doRRTConnect(qStart3, qGoal3);
+	write_easyrob_program_file(path, "rrt.prg"); */
+
 
 	return EXIT_SUCCESS;
 }

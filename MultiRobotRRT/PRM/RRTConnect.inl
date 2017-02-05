@@ -8,7 +8,7 @@ RRTConnect<_ROBOT_TYPE>::RRTConnect()
 }
 
 template<typename _ROBOT_TYPE>
-RRTConnect<_ROBOT_TYPE>::RRTConnect(std::vector<std::vector<Eigen::VectorXd>> inCoordinationDiagramPaths)
+RRTConnect<_ROBOT_TYPE>::RRTConnect(std::vector<std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>> inCoordinationDiagramPaths)
 	: cell(inCoordinationDiagramPaths), bIsCoordinationDiagram(true)
 {
 }
@@ -89,9 +89,9 @@ Eigen::VectorXd RRTConnect<_ROBOT_TYPE>::getPointOnSegment(Eigen::VectorXd a, Ei
 }
 
 template<typename _ROBOT_TYPE>
-std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::calculateShortestPath(int startIndex, int goalIndex, graph_t& g)
+std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> RRTConnect<_ROBOT_TYPE>::calculateShortestPath(int startIndex, int goalIndex, graph_t& g)
 {
-	std::vector<Eigen::VectorXd> path;
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path;
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_descriptor;
 	vertex_descriptor start = boost::vertex(startIndex, g);
 	std::vector<vertex_descriptor> p(num_vertices(g));
@@ -118,7 +118,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::calculateShortestPath(int 
 }
 
 template<typename _ROBOT_TYPE>
-void RRTConnect<_ROBOT_TYPE>::refinePath(std::vector<Eigen::VectorXd>& path)
+void RRTConnect<_ROBOT_TYPE>::refinePath(std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>& path)
 {
 	// Path Refinement
 	// Go through path
@@ -128,8 +128,16 @@ void RRTConnect<_ROBOT_TYPE>::refinePath(std::vector<Eigen::VectorXd>& path)
 		int lastSuccessor = current + 1;
 		for (unsigned int successor = current + 2; successor < path.size(); successor++)
 		{
-			if (cell.CheckMotion(path[current], path[successor], stepsize))
-				lastSuccessor = successor;
+			if (!bIsCoordinationDiagram)
+			{
+				if (cell.CheckMotion(path[current], path[successor], stepsize))
+					lastSuccessor = successor;
+			}
+			else
+			{
+				if (cell.CheckMotion(path[current], path[successor], 0.0001f))
+					lastSuccessor = successor;
+			}
 		}
 		if (lastSuccessor != current + 1)
 			path.erase(path.begin() + current + 1, path.begin() + lastSuccessor);
@@ -137,36 +145,94 @@ void RRTConnect<_ROBOT_TYPE>::refinePath(std::vector<Eigen::VectorXd>& path)
 }
 
 template<typename _ROBOT_TYPE>
-std::vector<Eigen::VectorXd>  RRTConnect<_ROBOT_TYPE>::convertCDPath(std::vector<Eigen::VectorXd> path)
+std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>  RRTConnect<_ROBOT_TYPE>::convertCDPath(std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path)
 {
-	std::vector<Eigen::VectorXd> newPath;
+	std::vector<Eigen::VectorXd*, Eigen::aligned_allocator<Eigen::VectorXd> > newPath;
+
 	for (unsigned int current = 0; current < path.size(); current++)
 	{
-		std::cout << path[current][0] << " " << path[current][1] << std::endl;
-		std::vector<Eigen::VectorXd> realPath = cell.convertToRealPosition(path[current]);
-		size_t sizeOfVector = realPath[0].size() + realPath.size();
-		Eigen::VectorXd q(sizeOfVector);
+		std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> realPath = cell.convertToRealPosition(path[current]);
+		size_t sizeOfVector = realPath[0].size() * realPath.size();
+		Eigen::VectorXd* q = new Eigen::VectorXd(sizeOfVector);
 
 		int index = 0;
 		for (size_t i = 0; i < realPath.size(); i++)
 		{
 			for (int x = 0; x < realPath[i].size(); x++)
 			{
-				std::cout << realPath[i][x] << " " << path[i][x];
-				q[index] = realPath[i][x];
+				(*q)[index] = realPath[i][x];
 				index++;
 			}
 		}
-		std::cout << std::endl;
-		std::cout << std::endl;
 
 		newPath.push_back(q);
 	}
-	return newPath;
+	// Actually this part is not necessary (can not shorten a shortes path ;)
+	//std::cout <<  "--------------------";
+	//// Add nodes
+	//std::vector<Eigen::VectorXd*, Eigen::aligned_allocator<Eigen::VectorXd> > completePath;
+	//int counterAdditions = 0;
+	//// Go through Robots
+	//for (int currentR = 0; currentR <1; currentR++)
+	//{
+	//	double totalPathLength = cell.cdPathLengths[currentR][cell.cdPathLengths[currentR].size() - 1];
+	//	// Go through Original Path
+	//	for (unsigned int currentOP = 1; currentOP < cell.cdPaths[currentR].size() - 1; currentOP++)
+	//	{
+	//		// Go through CoordinationDiagramm Path
+	//		for (int currentNP = 1; currentNP < path.size() - 1; currentNP++)
+	//		{
+	//			/*double pathToFirstOriginalPoint = 0.0;
+	//			if (currentOP == 1) pathToFirstOriginalPoint = 0.0;
+	//			else pathToFirstOriginalPoint = cell.cdPathLengths[currentR][currentOP - 1];*/
+
+	//			//if ((pathToFirstOriginalPoint > path[currentNP][currentR] && path[currentNP][currentR] < cell.cdPathLengths[currentR][currentOP]))// ||
+	//			//	//(cell.cdPathLengths[currentR][currentOP] < path[currentNP][currentR] && path[currentNP][currentR] > pathToFirstOriginalPoint)) // there are negative motions in CD allowed
+	//			double pathLength = cell.cdPathLengths[currentR][currentOP - 1] / cell.cdPathLengths[currentR][cell.cdPathLengths[currentR].size() - 1];
+	//			if ((pathLength > path[currentNP - 1][currentR] && pathLength <  path[currentNP][currentR]) ||
+	//				(pathLength < path[currentNP - 1][currentR] && pathLength > path[currentNP][currentR]))
+	//			{
+	//				// Get Path length to current 
+	//				size_t numberRobots = path[0].size();
+	//				Eigen::VectorXd newProgramLine(numberRobots);
+	//				/*for (unsigned int currentRo = 0; currentRo < numberRobots; currentRo++)
+	//					newProgramLine[currentRo] =  cell.cdPathLengths[currentRo][currentOP] / cell.cdPathLengths[currentRo][cell.cdPathLengths[currentRo].size() - 1];	*/	
+	//				for (unsigned int currentRo = 0; currentRo < numberRobots; currentRo++)
+	//					newProgramLine[currentRo] = pathLength;
+	//				/*for (unsigned int currentRo = 0; currentRo < numberRobots; currentRo++)
+	//					newProgramLine[currentRo] = path[currentNP][currentR];*/
+
+	//				// Create new Program line
+	//				std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> realQ = cell.convertToRealPosition(newProgramLine);
+	//				size_t sizeOfVector = realQ[0].size() * realQ.size();
+	//				Eigen::VectorXd* q = new Eigen::VectorXd(sizeOfVector);
+	//				int index = 0;
+	//				for (size_t i = 0; i < realQ.size(); i++)
+	//				{
+	//					for (int x = 0; x < realQ[i].size(); x++)
+	//					{
+	//						std::cout << realQ[i][x] << " ";
+	//						(*q)[index] = realQ[i][x];
+	//						index++;
+	//					}
+	//				}
+
+	//				//completePath.push_back(q);
+	//				newPath.insert(newPath.begin() + currentNP + counterAdditions, q);
+	//				counterAdditions++;
+	//			}
+	//		}
+	//	}
+	//}
+
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd> > returnPath;
+	for (unsigned int rp = 0; rp < newPath.size(); rp++)
+		returnPath.push_back(*newPath[rp]);
+	return returnPath;
 }
 
 template<typename _ROBOT_TYPE>
-std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::VectorXd qStart, Eigen::VectorXd qGoal)
+std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::VectorXd qStart, Eigen::VectorXd qGoal)
 {
 	MultiRobotRtree rtree;
 	MultiRobotRtree rtreeB;
@@ -180,7 +246,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 	int swapCounter = 0;
 
 	// Maximum number of Nodes
-	const int nNodes = 10000;
+	const int nNodes = 10000000;
 	std::cout << "Algorithm: Bidirectional balanced RRT" << std::endl;
 	std::cout << "Number of maximum Nodes:" << nNodes << std::endl;
 
@@ -217,7 +283,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 			// Calculate qs
 			bool hitObs = cell.FirstContact(qs, cObstacle, qn, qrand, stepsize);
 
-			Eigen::VectorXd blub(2);
+			/*Eigen::VectorXd blub(2);
 			blub << 1.0, 1.0;
 			blub.normalize();
 
@@ -227,7 +293,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 			double wh = acos(blub2.dot(blub)) * 180.0 / 3.14159265;
 
 			if (acos(blub2.dot(blub)) < 0)
-				bool ds = true;
+				bool ds = true;*/
 
 			// New sample
 			if ((qs - qn).squaredNorm() > (0.001*0.001))  //qs != qn)
@@ -303,7 +369,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 						break;
 					}
 				}
-				if (boost::num_vertices(gb) < boost::num_vertices(g))
+				if (boost::num_edges(gb) < boost::num_edges(g))
 				{
 					g.swap(gb);
 					rtree.swap(rtreeB);
@@ -314,7 +380,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 	}
 
 	// Calculate shortest Paths
-	std::vector<Eigen::VectorXd> path;
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path;
 	if (solutionIndex != -1)
 	{
 		// Connect paths 
@@ -323,7 +389,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 
 		if (solutionIndexB != -1)
 		{
-			std::vector<Eigen::VectorXd> pathGB = calculateShortestPath(0, solutionIndexB, gb);
+			std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> pathGB = calculateShortestPath(0, solutionIndexB, gb);
 			std::cout << "Path size of GB: " << pathGB.size() << std::endl;
 			reverse(pathGB.begin(), pathGB.end());
 			path.insert(path.end(), pathGB.begin(), pathGB.end());
@@ -331,8 +397,7 @@ std::vector<Eigen::VectorXd> RRTConnect<_ROBOT_TYPE>::doRRTConnect(Eigen::Vector
 			reverse(path.begin(), path.end());
 		}
 		// Refine Path
-		if (!bIsCoordinationDiagram)
-			refinePath(path);
+		refinePath(path);
 
 		if(bIsCoordinationDiagram)
 			path = convertCDPath(path);

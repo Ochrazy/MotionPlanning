@@ -2,6 +2,7 @@
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 #include "cell.h"
+#include<Eigen/StdVector>
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -12,10 +13,10 @@ class RRTConnect
 {
 public:
 	RRTConnect();
-	RRTConnect(std::vector<std::vector<Eigen::VectorXd>> inCoordinationDiagramPaths);
+	RRTConnect(std::vector<std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>> inCoordinationDiagramPaths);
 
 	// RRTConnect
-	std::vector<Eigen::VectorXd> doRRTConnect(Eigen::VectorXd qStart, Eigen::VectorXd qGoal);
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> doRRTConnect(Eigen::VectorXd qStart, Eigen::VectorXd qGoal);
 
 private:
 	// Coordination Diagram
@@ -46,12 +47,16 @@ private:
 	Eigen::VectorXd getPointOnSegment(Eigen::VectorXd a, Eigen::VectorXd b, double t);
 
 	// Path
-	std::vector<Eigen::VectorXd> RRTConnect::calculateShortestPath(int startIndex, int goalIndex, graph_t& g);
-	void refinePath(std::vector<Eigen::VectorXd>& path);
-	std::vector<Eigen::VectorXd> convertCDPath(std::vector<Eigen::VectorXd> path);
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> RRTConnect::calculateShortestPath(int startIndex, int goalIndex, graph_t& g);
+	void refinePath(std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>& path);
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> convertCDPath(std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> path);
 };
 
 #include "RRTConnect.inl"
 
 typedef RRTConnect<MultiRobot2x2> RRTConnect2x2;
+typedef RRTConnect<MultiRobot2x4> RRTConnect2x3;
+typedef RRTConnect<MultiRobot2x4> RRTConnect2x4;
 typedef RRTConnect<Robot2> RRTConnect2;
+typedef RRTConnect<Robot3> RRTConnect3;
+typedef RRTConnect<Robot4> RRTConnect4;

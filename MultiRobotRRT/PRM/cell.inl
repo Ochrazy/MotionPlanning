@@ -8,13 +8,14 @@ Cell<_ROBOT_TYPE, _CELL_TYPE>::Cell()
 }
 
 template<typename _ROBOT_TYPE, typename _CELL_TYPE>
-Cell<_ROBOT_TYPE, _CELL_TYPE>::Cell(std::vector<std::vector<Eigen::VectorXd>> inCoordinationDiagramPaths)
+Cell<_ROBOT_TYPE, _CELL_TYPE>::Cell(std::vector<std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>> inCoordinationDiagramPaths)
 	: unif_(0., 1.), cdPaths(inCoordinationDiagramPaths)
 {
 	_ROBOT_TYPE()(obj_robot_);
 	_CELL_TYPE()(obj_obstacle_, tf_obstacle_);
 	ResetRNG();
 
+	// Calculate Path Lengths
 	for (size_t i = 0; i < cdPaths.size(); i++)
 	{
 		std::vector<double> pathLengths;
@@ -68,12 +69,14 @@ bool Cell<_ROBOT_TYPE, _CELL_TYPE>::JumpTo(const Eigen::VectorXd &q)
 }
 
 template<typename _ROBOT_TYPE, typename _CELL_TYPE>
-std::vector<Eigen::VectorXd> Cell<_ROBOT_TYPE, _CELL_TYPE>::convertToRealPosition(Eigen::VectorXd q)
+std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> Cell<_ROBOT_TYPE, _CELL_TYPE>::convertToRealPosition(Eigen::VectorXd q)
 {
-	std::vector<Eigen::VectorXd> newQs;
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> newQs;
+	// Go through robots (Axes)
 	for (int robot = 0; robot < q.size(); robot++)
 	{
 		double lengthToGo = q[robot] * cdPathLengths[robot][cdPathLengths[robot].size()-1];
+		// Go through Path lengths
 		for (size_t lengths = 0; lengths < cdPathLengths[robot].size()-1; lengths++)
 		{
 			lengthToGo -= cdPathLengths[robot][lengths];
@@ -106,28 +109,29 @@ bool Cell<_ROBOT_TYPE, _CELL_TYPE>::CheckPosition(const Eigen::VectorXd &q)
 {
 	if (cdPaths.size() > 0)
 	{
-		std::vector<Eigen::VectorXd> realQ = convertToRealPosition(q);
+		std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> realQ = convertToRealPosition(q);
+		int numberRobots = realQ.size();
 		std::vector<fcl::Transform3f> transforms;
-		for (size_t i = 0; i < realQ.size(); i++)
+		for (int t = 0; t < numberRobots; t++)
 		{
-			std::vector<fcl::Transform3f> cur = _ROBOT_TYPE::ForwardKinematic(realQ[i]);
+			std::vector<fcl::Transform3f> cur = _ROBOT_TYPE::ForwardKinematic(realQ[t]);
 			transforms.insert(transforms.end(), cur.begin(), cur.end());
 		}
 		tf_robot_ = transforms;
 		if (tf_robot_.empty()) return false;
-		for (size_t i = 0; i < 2; ++i)
+		for (int i = 0; i < numberRobots; ++i)
 		{
 			
-			//// Test for collision with Obstacles
-			//for (size_t j = 0; j < obj_obstacle_.size(); ++j)
-			//{
-			//if (solver_.shapeIntersect(*obj_robot_[i], tf_robot_[i], *obj_obstacle_[j], tf_obstacle_[j], nullptr))
-			//return false;
-			//}
+			// Test for collision with Obstacles
+			for (size_t j = 0; j < obj_obstacle_.size(); ++j)
+			{
+				if (solver_.shapeIntersect(*obj_robot_[0], tf_robot_[i], *obj_obstacle_[j], tf_obstacle_[j], nullptr))
+				return false;
+			}
 			
 
 			// Test for collision with Other Robots
-			for (size_t otherRobots = 0; otherRobots < 2; ++otherRobots)
+			for (int otherRobots = 0; otherRobots < numberRobots; ++otherRobots)
 			{
 				if (otherRobots == i) continue;
 				if (solver_.shapeIntersect(*obj_robot_[0], tf_robot_[i], *obj_robot_[0], tf_robot_[otherRobots], nullptr))

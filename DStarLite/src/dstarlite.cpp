@@ -228,7 +228,7 @@ std::vector<position2D> DStarLite::step(std::vector<position2D> currentPositions
 				setObstacle(std::make_pair((*cell)->x(), (*cell)->y()), pi, cost--);
 		// Object self
 		for (unsigned int pi2 = index; pi2 < _planner.size(); pi2++)
-			setObstacle(std::make_pair(paths[obsIndex].front()->x(), paths[obsIndex].front()->y()), pi2, Map::Cell::COST_UNWALKABLE);
+			setObstacle(std::make_pair(paths[obsIndex].front()->x(), paths[obsIndex].front()->y()), pi2, 99);
 			
 		setNewStart(currentPositions[index], index);
 		paths.push_back(replan(index));

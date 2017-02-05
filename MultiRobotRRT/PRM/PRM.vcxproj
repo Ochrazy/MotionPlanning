@@ -27,7 +27,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -39,7 +39,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -183,7 +183,11 @@
     <ClCompile Include="cell.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MultiRobot2x2.cpp" />
+    <ClCompile Include="MultiRobot2x3.cpp" />
+    <ClCompile Include="MultiRobot2x4.cpp" />
     <ClCompile Include="Robot2.cpp" />
+    <ClCompile Include="Robot3.cpp" />
+    <ClCompile Include="Robot4.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -194,7 +198,11 @@
   <ItemGroup>
     <ClInclude Include="cell.h" />
     <ClInclude Include="MultiRobot2x2.h" />
+    <ClInclude Include="MultiRobot2x3.h" />
+    <ClInclude Include="MultiRobot2x4.h" />
     <ClInclude Include="Robot2.h" />
+    <ClInclude Include="Robot3.h" />
+    <ClInclude Include="Robot4.h" />
     <ClInclude Include="RRTConnect.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

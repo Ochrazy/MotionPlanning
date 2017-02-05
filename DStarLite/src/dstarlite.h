@@ -50,8 +50,8 @@ namespace DSTARLITE
 			void deleteObstacleFromMap(position2D obstacle);
 
 			void setNewStart(position2D start, int plannerIndex);
-			void setObstacle(position2D obstacle, int plannerIndex, double cost = Map::Cell::COST_UNWALKABLE, int width = 1, int height = 1);
-			void deleteObstacleFromMap(position2D obstacle, int plannerIndex, double cost = 5.0, int width = 1, int height = 1);
+			void setObstacle(position2D obstacle, int plannerIndex, double cost = Map::Cell::COST_UNWALKABLE, int width = 20, int height = 10);
+			void deleteObstacleFromMap(position2D obstacle, int plannerIndex, double cost = 5.0, int width = 20, int height = 10);
 			void printMap();
 			position2D step(std::pair<unsigned int, unsigned int> current, std::pair<unsigned int, unsigned int> obstacle);
 			std::vector<position2D> step(std::vector<position2D> currentPositions);

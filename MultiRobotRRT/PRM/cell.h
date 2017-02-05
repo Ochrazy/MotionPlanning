@@ -22,8 +22,14 @@
 #include <boost/geometry/geometries/register/point.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
+#include<Eigen/StdVector>
+
+#include "MultiRobot2x4.h"
+#include "MultiRobot2x3.h"
 #include "MultiRobot2x2.h"
 #include "Robot2.h"
+#include "Robot3.h"
+#include "Robot4.h"
 
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 #define DEG2RAD(x) ((x) * M_PI / 180.0)
@@ -52,7 +58,7 @@ typedef boost::graph_traits<graph_t>::vertex_iterator vertex_iter;
 typedef boost::graph_traits<graph_t>::edge_iterator edge_iter;
 
 void write_nodes_file(graph_t, std::string, bool jump_to = true);
-void write_easyrob_program_file(std::vector<Eigen::VectorXd>, std::string, bool jump_to = false);
+void write_easyrob_program_file(std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>, std::string, bool jump_to = false);
 void write_gnuplot_file(graph_t, std::string);
 
 template<typename _ROBOT_TYPE, typename _CELL_TYPE>
@@ -60,7 +66,7 @@ class Cell
 {
 public:
     Cell();
-	Cell(std::vector<std::vector<Eigen::VectorXd>> inCoordinationDiagramPaths);
+	Cell(std::vector<std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>> inCoordinationDiagramPaths);
     virtual ~Cell() { }
 
     bool JumpTo(const Eigen::VectorXd &q);
@@ -73,9 +79,13 @@ public:
     Eigen::VectorXd NextRandomCfree();
     void ResetRNG();
 
-	std::vector<Eigen::VectorXd>  convertToRealPosition(Eigen::VectorXd q);
+	std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>  convertToRealPosition(Eigen::VectorXd q);
 
     _ROBOT_TYPE& Robot() { return robot_; }
+
+	// Coordination Diagram
+	std::vector<std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>>> cdPaths;
+	std::vector<std::vector<double>> cdPathLengths;
 
 protected:
     Cell(const Cell&);
@@ -87,10 +97,6 @@ protected:
     std::vector<fcl::Transform3f> tf_robot_;
     fcl::GJKSolver_libccd solver_;
 
-	// Coordination Diagram
-	std::vector<std::vector<Eigen::VectorXd>> cdPaths;
-	std::vector<std::vector<double>> cdPathLengths;
-
     std::mt19937_64 rng_; // Random Number Generator
     std::uniform_real_distribution<double> unif_;
     _ROBOT_TYPE robot_;
@@ -99,5 +105,7 @@ protected:
 #include "cell.inl"
 
 typedef Cell<MultiRobot2x2, MyCell> MultiRobotCell;
+typedef Cell<MultiRobot2x3, MyCell> MultiRobotCell3;
+typedef Cell<MultiRobot2x4, MyCell> MultiRobotCell4;
 
 #endif

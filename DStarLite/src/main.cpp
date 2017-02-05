@@ -64,9 +64,9 @@ int main(int argc, char **argv)
 	
 	std::vector<std::vector<position2D>> paths;
 	std::vector<position4D> startGoalPositions;
-	startGoalPositions.push_back(std::make_pair(std::make_pair(0, 25), std::make_pair(50, 25)));
-	//startGoalPositions.push_back(std::make_pair(std::make_pair(0, 0), std::make_pair(99, 99)));
-	startGoalPositions.push_back(std::make_pair(std::make_pair(26, 50), std::make_pair(26, 0)));
+	startGoalPositions.push_back(std::make_pair(std::make_pair(3, 3), std::make_pair(95, 95)));
+	startGoalPositions.push_back(std::make_pair(std::make_pair(90, 90), std::make_pair(5, 5)));
+	//startGoalPositions.push_back(std::make_pair(std::make_pair(7, 85), std::make_pair(85, 7)));
 	
 	DStarLite dstarlite(5, 100, 100, startGoalPositions, 30);
 	paths = dstarlite.calculatePaths();

@@ -14,6 +14,8 @@ char** arguments;
 int argumentcount;
 using namespace std;
 
+double baseTimeInSecons = 3.0;
+
 bool check_local_minimum(vector<Point>, Point, int i);
 void MouseFunc(int, int, int, int); // Maus-Tasten und -Bewegung abfragen
 void MouseMotion(int, int); // Maus-Bewegungen mit gedrückter Maus-Taste
@@ -184,21 +186,41 @@ void RenderScene(void)
 	
 	if (currentAlgorithm == Algorithm::RRTConnect)
 	{
-		glPushMatrix();
-		glColor4f(1., 0., 0., 1.);
-		glTranslatef(robPos[0].x, robPos[0].y, 0.f);
-		glTranslatef(0.05, 0.025, 0.0);
-		glScalef(0.1, 0.05, 0.05);
-		glutSolidCube(1.f);
-		glPopMatrix();
+		for (int i = 0; i < atoi(arguments[2]); ++i) {
+			glPushMatrix();
+			glColor4f(farben[i * 4 + 0], farben[i * 4 + 1], farben[i * 4 + 2], farben[i * 4 + 3]);
+			glTranslatef(robPos[i].x, robPos[i].y, 0.f);
+			//glTranslatef(0.05, 0.025, 0.0);
+			glScalef(0.1, 0.05, 0.05);
+			glutSolidCube(1.f);
+			glPopMatrix();
+		}
 
-		glPushMatrix();
-		glColor4f(0., 0., 1., 1.);
-		glTranslatef(robPos[1].x, robPos[1].y, 0.f);
-		glTranslatef(0.05, 0.025, 0.0);
-		glScalef(0.1, 0.05, 0.05);
-		glutSolidCube(1.f);
-		glPopMatrix();
+		if(atoi(arguments[5]) > 0)
+		{
+			/*tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.1 + 0.0, 0.2 + 0.55, 0)));
+			tf_obstacle.push_back(fcl::Transform3f(fcl::Vec3f(0.1, 0.25, 0)));
+
+			for (auto i : tf_obstacle)
+				obj_obstacle.push_back(std::make_shared<fcl::Box>(0.2, 0.4, 0.05));*/
+
+
+			glPushMatrix();
+			glColor4f(0.5, 0.5, 0.5, 1.);
+			glTranslatef(0.1, 0.27, 0.f);
+			//glTranslatef(0.1, 0.2, 0.0);
+			glScalef(0.2, 0.4, 0.05);
+			glutSolidCube(1.f);
+			glPopMatrix();
+
+			glPushMatrix();
+			glColor4f(0.5, 0.5, 0.5, 1.);
+			glTranslatef(0.1, 0.73, 0.f);
+			//glTranslatef(0.1, 0.2, 0.0);
+			glScalef(0.2, 0.4, 0.05);
+			glutSolidCube(1.f);
+			glPopMatrix();
+		}
 	}
 	else if (currentAlgorithm == Algorithm::PotentialFieldMethod)
 	{
@@ -361,7 +383,7 @@ void AnimateProgram(int value)
 	static int waypointIndex = 0;
 	// TimeSync
 	static int steps = 0;
-	static double timeInSecons = 2.5;
+	double timeInSecons = baseTimeInSecons;
 
 	static int maxSteps = (1.0 / (animationUpdateInMS / 1000.0));
 	if (steps > (maxSteps*timeInSecons))
@@ -371,7 +393,7 @@ void AnimateProgram(int value)
 		if (waypointIndex > inputProgram->program.size() - 2)
 			waypointIndex = 0;
 
-		timeInSecons = 3.0;
+		timeInSecons = baseTimeInSecons;
 		double baseSpeed = 0.25;
 		Point startWaypoint(inputProgram->program[waypointIndex][0].x, inputProgram->program[waypointIndex][0].y, 0.);
 		Point endWaypoint(inputProgram->program[waypointIndex + 1][0].x, inputProgram->program[waypointIndex + 1][0].y, 0.);
@@ -385,8 +407,8 @@ void AnimateProgram(int value)
 		{
 			timeInSecons -= (baseSpeed - dis) * 10.0;
 		}
-		if (timeInSecons < 0.25)
-			timeInSecons = 0.25;
+		if (timeInSecons < 0.1)
+			timeInSecons = 0.1;
 	}
 	for (int nRob = 0; nRob < inputProgram->program[0].size(); nRob++)
 	{
@@ -420,8 +442,8 @@ void AnimateProgram(int value)
 int main(int argc, char* argv[]) {
 
 	// Debug command line argument (rrt):
-	/*argc = 2;
-	argv[1] = "rrt";*/
+	//argc = 2;
+	//argv[1] = "rrt";
 
 	//argc = 7;
 	//argv[1] = "pfm";
@@ -452,10 +474,6 @@ int main(int argc, char* argv[]) {
 	glutPassiveMotionFunc(PassivMouseMotion); // Maus-Bewegungen ohne gedrückte Maus-Taste (AUS)
 	glutSpecialFunc(SpecialFunc); // Funktion für Sondertasten (F1...F12++)
 
-	// Debug command line argument (rrt):
-	/*argc = 2;
-	argv[1] = "rrt.prg";*/
-
 	if (argc > 1)
 	{
 		// Load program
@@ -464,7 +482,8 @@ int main(int argc, char* argv[]) {
 			inputProgram = new Program();
 			currentAlgorithm = Algorithm::RRTConnect;
 			std::ifstream file;
-			file.open("rrt.prg");
+			file.open(argv[4]);
+			baseTimeInSecons = atof(argv[3]);
 
 			std::string input;
 			file >> input; // "ProgramFile"
@@ -478,7 +497,7 @@ int main(int argc, char* argv[]) {
 				// 2 Robots
 				Point2D point;
 				vector<Point2D> prog;
-				for (int nRob = 0; nRob < 2; nRob++)
+				for (int nRob = 0; nRob < atoi(argv[2]); nRob++)
 				{
 					file >> point.x >> point.y;
 					prog.push_back(point);
